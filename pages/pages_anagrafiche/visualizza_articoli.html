@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Articoli</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2 id="titoloLista">Visualizza Articoli</h2>
+        <p id="descrizioneSettore" class="section-description">Elenco completo degli articoli nel catalogo</p>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container" style="display: none;" id="tableContainer">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Descrizione</th>
+                        <th>Categoria</th>
+                        <th>Quantità</th>
+                        <th>Ubicazione</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="articoliTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+            
+        <div class="button-container" style="margin-top: 2rem;">
+            <button onclick="history.back()" class="button">TORNA INDIETRO</button>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { articoliService } from '../../js/services/articoliService.js';
+        import { SETTORI } from '../../js/utils/constants.js';
+        import { createQuantityModal } from '../../js/modal/quantityModal.js';
+        
+        let currentSettore = '';
+
+        async function loadArticoli() {
+            const params = new URLSearchParams(window.location.search);
+            const settore = params.get('settore')?.toUpperCase();
+            currentSettore = settore;
+            
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableContainer = document.getElementById('tableContainer');
+            const tableBody = document.getElementById('articoliTable');
+            
+            try {
+                if (settore && SETTORI[settore]) {
+                    const settoreInfo = SETTORI[settore];
+                    document.title = `EVENT TRACK - Visualizza Articoli ${settoreInfo.nome}`;
+                    document.getElementById('titoloLista').textContent = `Visualizza Articoli ${settoreInfo.nome}`;
+                    document.getElementById('descrizioneSettore').textContent = 
+                        `Elenco completo degli articoli ${settoreInfo.nome.toLowerCase()}`;
+                }
+
+                const result = await articoliService.getArticoli(settore);
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="no-data">
+                                Nessun articolo trovato
+                            </td>
+                        </tr>`;
+                } else {
+                    tableBody.innerHTML = result.data.map(articolo => `
+                        <tr>
+                            <td>${articolo.cod || '-'}</td>
+                            <td>${articolo.descrizione || '-'}</td>
+                            <td>${articolo.categoria || '-'}</td>
+                            <td>${articolo.quantita || 0}</td>
+                            <td>${articolo.ubicazione || '-'}</td>
+                            <td class="${articolo.attivo ? 'status-active' : 'status-inactive'}">
+                                ${articolo.attivo ? 'Attivo' : 'Inattivo'}
+                            </td>
+                            <td>
+                                <button onclick="window.modificaQuantita('${articolo.cod}')" class="button">
+                                    Modifica Quantità
+                                </button>
+                                <button onclick="window.toggleStato('${articolo.cod}', ${articolo.attivo})" class="button">
+                                    ${articolo.attivo ? 'Disattiva' : 'Attiva'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="error-message">
+                            ${error.message || 'Errore durante il caricamento degli articoli'}
+                        </td>
+                    </tr>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+                tableContainer.style.display = 'block';
+            }
+        }
+
+        // Crea il modal per la modifica della quantità
+        createQuantityModal();
+
+        // Funzione globale per modificare la quantità
+        window.modificaQuantita = async (cod) => {
+            const modal = document.getElementById('quantityModal');
+            const form = document.getElementById('quantityForm');
+            
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const nuovaQuantita = parseInt(document.getElementById('nuovaQuantita').value);
+                
+                try {
+                    const result = await articoliService.updateQuantita(currentSettore, cod, nuovaQuantita);
+                    if (result.success) {
+                        modal.style.display = 'none';
+                        await loadArticoli();
+                    } else {
+                        alert('Errore durante l\'aggiornamento: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'aggiornamento: ' + error.message);
+                }
+            };
+            
+            modal.style.display = 'block';
+        };
+
+        // Funzione globale per cambiare lo stato attivo/inattivo
+        window.toggleStato = async (cod, statoAttuale) => {
+            if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questo articolo?`)) {
+                try {
+                    const result = await articoliService.toggleStato(currentSettore, cod, !statoAttuale);
+                    if (result.success) {
+                        await loadArticoli();
+                    } else {
+                        alert('Errore durante l\'aggiornamento dello stato: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'aggiornamento dello stato: ' + error.message);
+                }
+            }
+        };
+
+        // Chiusura del modal
+        document.querySelector('.close-modal').onclick = () => {
+            document.getElementById('quantityModal').style.display = 'none';
+        };
+
+        // Carica gli articoli all'avvio
+        document.addEventListener('DOMContentLoaded', loadArticoli);
+    </script>
+</body>
+</html>

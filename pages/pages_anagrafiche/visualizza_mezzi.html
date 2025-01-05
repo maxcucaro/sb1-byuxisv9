@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Mezzi di Trasporto</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Visualizza Mezzi di Trasporto</h2>
+        <p class="section-description">Elenco completo dei mezzi di trasporto disponibili</p>
+
+        <div class="actions-container" style="margin: 2rem 0; display: flex; gap: 1rem;">
+            <button onclick="window.aggiungiMezzo()" class="button">
+                Aggiungi Nuovo Mezzo
+            </button>
+            <button onclick="history.back()" class="button">
+                Torna Indietro
+            </button>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container" style="display: none;" id="tableContainer">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Tipo</th>
+                        <th>Marca</th>
+                        <th>Modello</th>
+                        <th>Targa</th>
+                        <th>Portata</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="mezziTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { mezziService } from '../../js/services/mezziService.js';
+        import { createMezzoModal } from '../../js/modal/mezzoModal.js';
+        import { supabase } from '../../js/utils/supabaseClient.js';
+
+        let isInitialized = false;
+
+        async function initializePage() {
+            if (isInitialized) return;
+            
+            // Create modal
+            createMezzoModal();
+            
+            // Setup modal close handler
+            const closeBtn = document.querySelector('.close-modal');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    const modal = document.getElementById('mezzoModal');
+                    if (modal) modal.style.display = 'none';
+                };
+            }
+
+            // Load initial data
+            await loadMezzi();
+            
+            isInitialized = true;
+        }
+
+        async function loadMezzi() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableContainer = document.getElementById('tableContainer');
+            const tableBody = document.getElementById('mezziTable');
+            
+            if (!loadingIndicator || !tableContainer || !tableBody) return;
+
+            try {
+                loadingIndicator.style.display = 'block';
+                tableContainer.style.display = 'none';
+
+                const result = await mezziService.getMezzi();
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="no-data">
+                                Nessun mezzo trovato
+                            </td>
+                        </tr>`;
+                } else {
+                    tableBody.innerHTML = result.data.map(mezzo => `
+                        <tr>
+                            <td>${mezzo.codice}</td>
+                            <td>${mezzo.tipo}</td>
+                            <td>${mezzo.marca}</td>
+                            <td>${mezzo.modello}</td>
+                            <td>${mezzo.targa}</td>
+                            <td>${mezzo.portata ? mezzo.portata + ' kg' : '-'}</td>
+                            <td class="${mezzo.attivo ? 'status-active' : 'status-inactive'}">
+                                ${mezzo.attivo ? 'Attivo' : 'Inattivo'}
+                            </td>
+                            <td>
+                                <button onclick="window.modificaMezzo('${mezzo.id}')" class="button">
+                                    Modifica
+                                </button>
+                                <button onclick="window.toggleStatoMezzo('${mezzo.id}', ${mezzo.attivo})" class="button">
+                                    ${mezzo.attivo ? 'Disattiva' : 'Attiva'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="error-message">
+                            ${error.message || 'Errore durante il caricamento dei mezzi'}
+                        </td>
+                    </tr>`;
+            } finally {
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (tableContainer) tableContainer.style.display = 'block';
+            }
+        }
+
+        window.modificaMezzo = async (id) => {
+            await initializePage();
+            
+            const modal = document.getElementById('mezzoModal');
+            const form = document.getElementById('mezzoForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('mezzi')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                
+                if (error) throw error;
+                if (!data) throw new Error('Mezzo non trovato');
+
+                // Aggiorna il titolo del modal
+                const modalTitle = modal.querySelector('h3');
+                if (modalTitle) {
+                    modalTitle.textContent = `Modifica Mezzo - ${data.codice}`;
+                }
+                
+                // Popola il form con i dati del mezzo
+                Object.entries(data).forEach(([key, value]) => {
+                    const element = form.elements[key];
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = value;
+                        } else {
+                            element.value = value || '';
+                        }
+                    }
+                });
+                
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = Object.fromEntries(new FormData(form));
+                    formData.attivo = form.attivo.checked;
+                    
+                    try {
+                        const result = await mezziService.updateMezzo(id, formData);
+                        if (result.success) {
+                            modal.style.display = 'none';
+                            await loadMezzi();
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        alert('Errore durante l\'aggiornamento: ' + error.message);
+                    }
+                };
+                
+                modal.style.display = 'block';
+            } catch (error) {
+                alert('Errore durante il caricamento del mezzo: ' + error.message);
+            }
+        };
+
+        window.aggiungiMezzo = async () => {
+            await initializePage();
+            
+            const modal = document.getElementById('mezzoModal');
+            const form = document.getElementById('mezzoForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            // Resetta il titolo del modal
+            const modalTitle = modal.querySelector('h3');
+            if (modalTitle) {
+                modalTitle.textContent = 'Aggiungi Mezzo di Trasporto';
+            }
+
+            form.reset();
+            
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const formData = Object.fromEntries(new FormData(form));
+                formData.attivo = form.attivo.checked;
+                
+                try {
+                    const result = await mezziService.addMezzo(formData);
+                    if (result.success) {
+                        modal.style.display = 'none';
+                        await loadMezzi();
+                    } else {
+                        alert('Errore durante il salvataggio: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante il salvataggio: ' + error.message);
+                }
+            };
+            
+            modal.style.display = 'block';
+        };
+
+        window.toggleStatoMezzo = async (id, statoAttuale) => {
+            if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questo mezzo?`)) {
+                try {
+                    const result = await mezziService.toggleStatoMezzo(id, !statoAttuale);
+                    if (result.success) {
+                        await loadMezzi();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante la modifica dello stato: ' + error.message);
+                }
+            }
+        };
+
+        // Initialize page on load
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>

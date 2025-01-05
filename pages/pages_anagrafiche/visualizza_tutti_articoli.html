@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Tutti gli Articoli</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Visualizza Tutti gli Articoli</h2>
+        <p class="section-description">Elenco completo degli articoli per ogni settore</p>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        <div id="articoliContainer"></div>
+            
+        <div class="button-container" style="margin-top: 2rem;">
+            <button onclick="history.back()" class="button">TORNA INDIETRO</button>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { supabase } from '../../js/utils/supabaseClient.js';
+        import { SETTORI } from '../../js/utils/constants.js';
+        
+        async function getAllArticoli() {
+            try {
+                const results = {};
+                const settoriKeys = Object.keys(SETTORI);
+
+                const queries = settoriKeys.map(async (settore) => {
+                    const { data, error } = await supabase
+                        .from(`articoli_${settore.toLowerCase()}`)
+                        .select('*')
+                        .order('cod', { ascending: true });
+
+                    if (error) {
+                        console.error(`Errore nel recupero articoli ${settore}:`, error);
+                        return [settore, []];
+                    }
+                    return [settore, data || []];
+                });
+
+                const results_array = await Promise.all(queries);
+                results_array.forEach(([settore, data]) => {
+                    results[settore] = data;
+                });
+
+                return { success: true, data: results };
+            } catch (error) {
+                console.error('Errore nel recupero di tutti gli articoli:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        function createTableHTML(settore, articoli) {
+            return `
+                <div class="table-container" style="margin-bottom: 3rem;">
+                    <h3 style="margin-bottom: 1rem;">Settore ${SETTORI[settore].nome}</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Codice</th>
+                                <th>Descrizione</th>
+                                <th>Categoria</th>
+                                <th>Quantità</th>
+                                <th>Ubicazione</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${articoli.length === 0 ? `
+                                <tr>
+                                    <td colspan="6" class="no-data">
+                                        Nessun articolo trovato
+                                    </td>
+                                </tr>
+                            ` : articoli.map(articolo => `
+                                <tr>
+                                    <td>${articolo.cod || '-'}</td>
+                                    <td>${articolo.descrizione || '-'}</td>
+                                    <td>${articolo.categoria || '-'}</td>
+                                    <td>${articolo.quantita || 0}</td>
+                                    <td>${articolo.ubicazione || '-'}</td>
+                                    <td class="${articolo.attivo ? 'status-active' : 'status-inactive'}">
+                                        ${articolo.attivo ? 'Attivo' : 'Inattivo'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function loadAllArticoli() {
+            const container = document.getElementById('articoliContainer');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            try {
+                const result = await getAllArticoli();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                let html = '';
+                for (const [settore, articoli] of Object.entries(result.data)) {
+                    if (SETTORI[settore]) {
+                        html += createTableHTML(settore, articoli);
+                    }
+                }
+                
+                container.innerHTML = html || '<p class="no-data">Nessun articolo trovato</p>';
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                container.innerHTML = `
+                    <div class="error-message">
+                        Errore durante il caricamento: ${error.message}
+                    </div>
+                `;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAllArticoli);
+    </script>
+</body>
+</html>

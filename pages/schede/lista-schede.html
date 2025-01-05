@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Lista Schede Lavoro</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/search.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html" class="active">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../workspace.html">Workspace</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="header-actions">
+            <h2 id="titoloLista">Lista Schede Lavoro</h2>
+            <button onclick="window.location.href='nuova-scheda.html'" class="button">
+                Nuova Scheda
+            </button>
+        </div>
+
+        <div id="searchContainer"></div>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container" style="display: none;" id="tableContainer">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Nome</th>
+                        <th>Riferimento</th>
+                        <th>Data Inizio</th>
+                        <th>Data Fine</th>
+                        <th>Luogo</th>
+                        <th>Responsabile</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="schedeTable">
+                    <!-- Table content will be populated dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { schedeLavoroService } from '../../js/services/schedeLavoroService.js';
+        import { WORK_ORDER_TYPES } from '../../js/constants/workOrderTypes.js';
+        import { getReferenceValue } from '../../js/utils/referenceUtils.js';
+        import { createSearchBar } from '../../js/components/search/SearchBar.js';
+        import { setupSearch } from '../../js/components/search/SearchUtils.js';
+
+        let currentSchede = [];
+
+        function formatDate(date) {
+            if (!date) return '-';
+            return new Date(date).toLocaleDateString();
+        }
+
+        async function loadSchedeLavoro() {
+            const params = new URLSearchParams(window.location.search);
+            const tipo = params.get('tipo');
+            
+            if (!tipo || !WORK_ORDER_TYPES[tipo]) {
+                window.location.href = '../../schede-lavori.html';
+                return;
+            }
+
+            const tipoInfo = WORK_ORDER_TYPES[tipo];
+            document.getElementById('titoloLista').textContent = tipoInfo.nome;
+            document.title = `EVENT TRACK - ${tipoInfo.nome}`;
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableContainer = document.getElementById('tableContainer');
+            const tableBody = document.getElementById('schedeTable');
+            
+            try {
+                const result = await schedeLavoroService.getSchedeLavoro();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                // Filter schede by tipo
+                currentSchede = result.data.filter(scheda => scheda.tipo_lavoro === tipo);
+
+                // Setup search
+                const searchContainer = document.getElementById('searchContainer');
+                searchContainer.innerHTML = createSearchBar();
+                setupSearch(searchContainer, currentSchede, updateTable);
+
+                // Initial render
+                updateTable(currentSchede);
+                
+                loadingIndicator.style.display = 'none';
+                tableContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="error-message">
+                            ${error.message || 'Errore durante il caricamento delle schede lavoro'}
+                        </td>
+                    </tr>`;
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        function updateTable(schede) {
+            const params = new URLSearchParams(window.location.search);
+            const tipo = params.get('tipo');
+            
+            const tableBody = document.getElementById('schedeTable');
+            
+            if (!schede || schede.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="no-data">
+                            Nessuna scheda lavoro trovata
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tableBody.innerHTML = schede.map(scheda => `
+                <tr>
+                    <td>${scheda.codice}</td>
+                    <td>${scheda.nome}</td>
+                    <td>${getReferenceValue(scheda, tipo, WORK_ORDER_TYPES) || '-'}</td>
+                    <td>${formatDate(scheda.data_inizio)}</td>
+                    <td>${formatDate(scheda.data_fine)}</td>
+                    <td>${scheda.luogo}</td>
+                    <td>${scheda.responsabile ? `${scheda.responsabile.nome} ${scheda.responsabile.cognome}` : '-'}</td>
+                    <td class="status-${scheda.stato.toLowerCase()}">${scheda.stato}</td>
+                    <td>
+                        <button onclick="window.visualizzaScheda('${scheda.id}')" class="button">
+                            Visualizza
+                        </button>
+                        <button onclick="window.modificaScheda('${scheda.id}')" class="button">
+                            Modifica
+                        </button>
+                        ${scheda.stato === 'APPROVATA' ? `
+                            <a href="../../workspace.html" class="button workspace-button">
+                                Workspace
+                            </a>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Navigation functions
+        window.visualizzaScheda = (id) => {
+            window.location.href = `visualizza-scheda.html?id=${id}`;
+        };
+
+        window.modificaScheda = (id) => {
+            window.location.href = `modifica-scheda.html?id=${id}`;
+        };
+
+        // Load work orders on page load
+        document.addEventListener('DOMContentLoaded', loadSchedeLavoro);
+    </script>
+
+    <style>
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .status-bozza { color: #f59e0b; }
+        .status-approvata { color: #10b981; }
+        .status-in_corso { color: #3b82f6; }
+        .status-completata { color: #059669; }
+        .status-annullata { color: #ef4444; }
+    </style>
+</body>
+</html>

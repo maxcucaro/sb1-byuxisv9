@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Imballi</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Visualizza Imballi</h2>
+        <p class="section-description">Elenco completo degli imballi disponibili</p>
+
+        <div class="actions-container" style="margin: 2rem 0;">
+            <button onclick="window.aggiungiImballo()" class="button">
+                Aggiungi Nuovo Imballo
+            </button>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container" style="display: none;" id="tableContainer">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Descrizione</th>
+                        <th>Dimensioni</th>
+                        <th>Peso</th>
+                        <th>Capacità</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="imballiTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { imballiService } from '../../js/services/imballiService.js';
+        import { createImballoModal } from '../../js/modal/imballoModal.js';
+        import { supabase } from '../../js/utils/supabaseClient.js';
+
+        async function loadImballi() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableContainer = document.getElementById('tableContainer');
+            const tableBody = document.getElementById('imballiTable');
+            
+            try {
+                const result = await imballiService.getImballi();
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="no-data">
+                                Nessun imballo trovato
+                            </td>
+                        </tr>`;
+                } else {
+                    tableBody.innerHTML = result.data.map(imballo => `
+                        <tr>
+                            <td>${imballo.codice}</td>
+                            <td>${imballo.descrizione}</td>
+                            <td>${imballo.dimensioni || '-'}</td>
+                            <td>${imballo.peso ? imballo.peso + ' kg' : '-'}</td>
+                            <td>${imballo.capacita || '-'}</td>
+                            <td class="${imballo.attivo ? 'status-active' : 'status-inactive'}">
+                                ${imballo.attivo ? 'Attivo' : 'Inattivo'}
+                            </td>
+                            <td>
+                                <button onclick="window.modificaImballo('${imballo.id}')" class="button">
+                                    Modifica
+                                </button>
+                                <button onclick="window.toggleStatoImballo('${imballo.id}', ${imballo.attivo})" class="button">
+                                    ${imballo.attivo ? 'Disattiva' : 'Attiva'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="error-message">
+                            ${error.message || 'Errore durante il caricamento degli imballi'}
+                        </td>
+                    </tr>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+                tableContainer.style.display = 'block';
+            }
+        }
+
+        // Inizializza il modal
+        createImballoModal();
+
+        // Funzioni globali per la gestione degli imballi
+        window.aggiungiImballo = () => {
+            const modal = document.getElementById('imballoModal');
+            const form = document.getElementById('imballoForm');
+            
+            // Reset form
+            form.reset();
+            
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const formData = {
+                    codice: form.codice.value,
+                    descrizione: form.descrizione.value,
+                    dimensioni: form.dimensioni.value,
+                    peso: form.peso.value ? parseFloat(form.peso.value) : null,
+                    capacita: form.capacita.value,
+                    note: form.note.value,
+                    attivo: form.attivo.checked
+                };
+                
+                try {
+                    const result = await imballiService.addImballo(formData);
+                    if (result.success) {
+                        modal.style.display = 'none';
+                        await loadImballi();
+                    } else {
+                        alert('Errore durante il salvataggio: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante il salvataggio: ' + error.message);
+                }
+            };
+            
+            modal.style.display = 'block';
+        };
+
+        window.modificaImballo = async (id) => {
+            const modal = document.getElementById('imballoModal');
+            const form = document.getElementById('imballoForm');
+            
+            try {
+                const { data } = await supabase
+                    .from('imballi')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                
+                if (data) {
+                    form.codice.value = data.codice;
+                    form.descrizione.value = data.descrizione;
+                    form.dimensioni.value = data.dimensioni || '';
+                    form.peso.value = data.peso || '';
+                    form.capacita.value = data.capacita || '';
+                    form.note.value = data.note || '';
+                    form.attivo.checked = data.attivo;
+                    
+                    form.onsubmit = async (e) => {
+                        e.preventDefault();
+                        const formData = {
+                            codice: form.codice.value,
+                            descrizione: form.descrizione.value,
+                            dimensioni: form.dimensioni.value,
+                            peso: form.peso.value ? parseFloat(form.peso.value) : null,
+                            capacita: form.capacita.value,
+                            note: form.note.value,
+                            attivo: form.attivo.checked
+                        };
+                        
+                        try {
+                            const result = await imballiService.updateImballo(id, formData);
+                            if (result.success) {
+                                modal.style.display = 'none';
+                                await loadImballi();
+                            } else {
+                                alert('Errore durante l\'aggiornamento: ' + result.error);
+                            }
+                        } catch (error) {
+                            alert('Errore durante l\'aggiornamento: ' + error.message);
+                        }
+                    };
+                    
+                    modal.style.display = 'block';
+                }
+            } catch (error) {
+                alert('Errore durante il caricamento dell\'imballo: ' + error.message);
+            }
+        };
+
+        window.toggleStatoImballo = async (id, statoAttuale) => {
+            if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questo imballo?`)) {
+                try {
+                    const result = await imballiService.toggleStatoImballo(id, !statoAttuale);
+                    if (result.success) {
+                        await loadImballi();
+                    } else {
+                        alert('Errore durante la modifica dello stato: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante la modifica dello stato: ' + error.message);
+                }
+            }
+        };
+
+        // Chiusura del modal
+        document.querySelector('.close-modal').onclick = () => {
+            document.getElementById('imballoModal').style.display = 'none';
+        };
+
+        // Carica gli imballi all'avvio
+        document.addEventListener('DOMContentLoaded', loadImballi);
+    </script>
+</body>
+</html>

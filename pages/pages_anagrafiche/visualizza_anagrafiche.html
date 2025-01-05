@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Anagrafiche</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-description">
+            <h2>Visualizza Anagrafiche</h2>
+            <p>Elenco completo delle anagrafiche nel sistema</p>
+            
+            <div class="button-container" style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="visualizza_produzioni.html" class="button">PRODUZIONI</a>
+                <a href="visualizza_clienti.html" class="button">CLIENTI</a>
+                <a href="visualizza_fornitori.html" class="button">FORNITORI</a>
+                <a href="visualizza_cat.html" class="button">CAT</a>
+                <button onclick="visualizzaTutte()" class="button">TUTTE</button>
+            </div>
+
+            <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                Caricamento in corso...
+            </div>
+
+            <div id="dataContainer" class="data-container">
+                <!-- Le tabelle verranno inserite qui -->
+            </div>
+            
+            <div class="button-container" style="margin-top: 2rem;">
+                <button onclick="history.back()" class="button">TORNA INDIETRO</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { loadAllAnagrafiche } from '../../js/services/visualizzaAnagraficheService.js';
+
+        window.visualizzaTutte = async function() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const dataContainer = document.getElementById('dataContainer');
+            
+            loadingIndicator.style.display = 'block';
+            dataContainer.innerHTML = '';
+            
+            try {
+                const result = await loadAllAnagrafiche();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                const { produzioni, clienti, fornitori, cat } = result.data;
+                let html = '';
+
+                // Produzioni
+                if (produzioni.length > 0) {
+                    html += `
+                        <div class="table-section">
+                            <h3>Produzioni</h3>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Codice</th>
+                                        <th>Nome</th>
+                                        <th>Cliente</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${produzioni.map(p => `
+                                        <tr>
+                                            <td>${p.codice}</td>
+                                            <td>${p.nome}</td>
+                                            <td>${p.cliente?.ragione_sociale || '-'}</td>
+                                            <td class="${p.attivo ? 'status-active' : 'status-inactive'}">
+                                                ${p.attivo ? 'Attiva' : 'Inattiva'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                }
+
+                // Clienti
+                if (clienti.length > 0) {
+                    html += `
+                        <div class="table-section">
+                            <h3>Clienti</h3>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Codice</th>
+                                        <th>Ragione Sociale</th>
+                                        <th>Città</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${clienti.map(c => `
+                                        <tr>
+                                            <td>${c.codice}</td>
+                                            <td>${c.ragione_sociale}</td>
+                                            <td>${c.citta || '-'}</td>
+                                            <td class="${c.attivo ? 'status-active' : 'status-inactive'}">
+                                                ${c.attivo ? 'Attivo' : 'Inattivo'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                }
+
+                // Fornitori
+                if (fornitori.length > 0) {
+                    html += `
+                        <div class="table-section">
+                            <h3>Fornitori</h3>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Codice</th>
+                                        <th>Ragione Sociale</th>
+                                        <th>Città</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${fornitori.map(f => `
+                                        <tr>
+                                            <td>${f.codice}</td>
+                                            <td>${f.ragione_sociale}</td>
+                                            <td>${f.citta || '-'}</td>
+                                            <td class="${f.attivo ? 'status-active' : 'status-inactive'}">
+                                                ${f.attivo ? 'Attivo' : 'Inattivo'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                }
+
+                // CAT
+                if (cat.length > 0) {
+                    html += `
+                        <div class="table-section">
+                            <h3>CAT</h3>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Codice</th>
+                                        <th>Nome</th>
+                                        <th>Cognome</th>
+                                        <th>Specializzazione</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${cat.map(c => `
+                                        <tr>
+                                            <td>${c.codice}</td>
+                                            <td>${c.nome}</td>
+                                            <td>${c.cognome}</td>
+                                            <td>${c.specializzazione || '-'}</td>
+                                            <td class="${c.attivo ? 'status-active' : 'status-inactive'}">
+                                                ${c.attivo ? 'Attivo' : 'Inattivo'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                }
+
+                if (!html) {
+                    html = '<p class="no-data">Nessuna anagrafica trovata</p>';
+                }
+
+                dataContainer.innerHTML = html;
+            } catch (error) {
+                console.error('Errore:', error);
+                dataContainer.innerHTML = `
+                    <div class="error-message">
+                        Errore durante il caricamento delle anagrafiche: ${error.message}
+                    </div>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        };
+    </script>
+
+    <style>
+        .table-section {
+            margin-bottom: 2rem;
+        }
+        .table-section h3 {
+            margin: 1rem 0;
+            color: var(--text-color);
+        }
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-style: italic;
+        }
+        .error-message {
+            color: #dc2626;
+            text-align: center;
+            padding: 1rem;
+        }
+    </style>
+</body>
+</html>

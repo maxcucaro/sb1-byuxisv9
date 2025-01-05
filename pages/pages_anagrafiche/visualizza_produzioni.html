@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Produzioni</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Visualizza Produzioni</h2>
+        <p class="section-description">Elenco completo delle produzioni registrate nel sistema</p>
+
+        <div class="actions-container" style="margin: 2rem 0; display: flex; gap: 1rem;">
+            <button onclick="window.aggiungiProduzione()" class="button">
+                Aggiungi Nuova Produzione
+            </button>
+            <button onclick="history.back()" class="button">
+                Torna Indietro
+            </button>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container" style="display: none;" id="tableContainer">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Nome</th>
+                        <th>Cliente</th>
+                        <th>Data Inizio</th>
+                        <th>Data Fine</th>
+                        <th>Luogo</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="produzioniTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { anagraficheService } from '../../js/services/anagraficheService.js';
+        import { createProduzioneModal } from '../../js/modal/produzioneModal.js';
+        import { supabase } from '../../js/utils/supabaseClient.js';
+        
+        let isInitialized = false;
+
+        async function initializePage() {
+            if (isInitialized) return;
+            
+            createProduzioneModal();
+            
+            const closeBtn = document.querySelector('.close-modal');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    const modal = document.getElementById('produzioneModal');
+                    if (modal) modal.style.display = 'none';
+                };
+            }
+
+            await loadProduzioni();
+            
+            isInitialized = true;
+        }
+
+        async function loadProduzioni() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableContainer = document.getElementById('tableContainer');
+            const tableBody = document.getElementById('produzioniTable');
+            
+            if (!loadingIndicator || !tableContainer || !tableBody) return;
+
+            try {
+                loadingIndicator.style.display = 'block';
+                tableContainer.style.display = 'none';
+
+                const result = await anagraficheService.getProduzioni();
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="no-data">
+                                Nessuna produzione trovata
+                            </td>
+                        </tr>`;
+                } else {
+                    tableBody.innerHTML = result.data.map(produzione => `
+                        <tr>
+                            <td>${produzione.codice}</td>
+                            <td>${produzione.nome}</td>
+                            <td>${produzione.cliente?.ragione_sociale || '-'}</td>
+                            <td>${produzione.data_inizio ? new Date(produzione.data_inizio).toLocaleDateString() : '-'}</td>
+                            <td>${produzione.data_fine ? new Date(produzione.data_fine).toLocaleDateString() : '-'}</td>
+                            <td>${produzione.luogo || '-'}</td>
+                            <td class="${produzione.attivo ? 'status-active' : 'status-inactive'}">
+                                ${produzione.attivo ? 'Attiva' : 'Inattiva'}
+                            </td>
+                            <td>
+                                <button onclick="window.modificaProduzione('${produzione.id}')" class="button">
+                                    Modifica
+                                </button>
+                                <button onclick="window.toggleStatoProduzione('${produzione.id}', ${produzione.attivo})" class="button">
+                                    ${produzione.attivo ? 'Disattiva' : 'Attiva'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="error-message">
+                            ${error.message || 'Errore durante il caricamento delle produzioni'}
+                        </td>
+                    </tr>`;
+            } finally {
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (tableContainer) tableContainer.style.display = 'block';
+            }
+        }
+
+        window.aggiungiProduzione = async () => {
+            await initializePage();
+            
+            const modal = document.getElementById('produzioneModal');
+            const form = document.getElementById('produzioneForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            const modalTitle = modal.querySelector('h3');
+            if (modalTitle) {
+                modalTitle.textContent = 'Aggiungi Nuova Produzione';
+            }
+
+            form.reset();
+            
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const formData = Object.fromEntries(new FormData(form));
+                formData.attivo = form.attivo.checked;
+                
+                try {
+                    const result = await anagraficheService.addProduzione(formData);
+                    if (result.success) {
+                        modal.style.display = 'none';
+                        await loadProduzioni();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante il salvataggio: ' + error.message);
+                }
+            };
+            
+            modal.style.display = 'block';
+        };
+
+        window.modificaProduzione = async (id) => {
+            await initializePage();
+            
+            const modal = document.getElementById('produzioneModal');
+            const form = document.getElementById('produzioneForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('produzioni')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                
+                if (error) throw error;
+                if (!data) throw new Error('Produzione non trovata');
+
+                const modalTitle = modal.querySelector('h3');
+                if (modalTitle) {
+                    modalTitle.textContent = `Modifica Produzione - ${data.codice}`;
+                }
+                
+                Object.entries(data).forEach(([key, value]) => {
+                    const element = form.elements[key];
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = value;
+                        } else {
+                            element.value = value || '';
+                        }
+                    }
+                });
+                
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = Object.fromEntries(new FormData(form));
+                    formData.attivo = form.attivo.checked;
+                    
+                    try {
+                        const result = await anagraficheService.updateProduzione(id, formData);
+                        if (result.success) {
+                            modal.style.display = 'none';
+                            await loadProduzioni();
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        alert('Errore durante l\'aggiornamento: ' + error.message);
+                    }
+                };
+                
+                modal.style.display = 'block';
+            } catch (error) {
+                alert('Errore durante il caricamento della produzione: ' + error.message);
+            }
+        };
+
+        window.toggleStatoProduzione = async (id, statoAttuale) => {
+            if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questa produzione?`)) {
+                try {
+                    const result = await anagraficheService.toggleStatoProduzione(id, !statoAttuale);
+                    if (result.success) {
+                        await loadProduzioni();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante la modifica dello stato: ' + error.message);
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Scheda Lavoro</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div id="schedaContainer" style="display: none;">
+            <div class="header-actions">
+                <h2>Scheda Lavoro <span id="codiceScheda"></span></h2>
+                <div class="status-badge" id="statoScheda"></div>
+            </div>
+
+            <div class="scheda-details">
+                <div class="info-section">
+                    <h3>Informazioni Generali</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Nome:</th>
+                            <td id="nomeScheda"></td>
+                        </tr>
+                        <tr>
+                            <th>Tipo Lavoro:</th>
+                            <td id="tipoLavoroScheda"></td>
+                        </tr>
+                        <tr>
+                            <th>Produzione:</th>
+                            <td id="produzioneScheda"></td>
+                        </tr>
+                        <tr>
+                            <th>Cliente:</th>
+                            <td id="clienteScheda"></td>
+                        </tr>
+                        <tr>
+                            <th>CAT:</th>
+                            <td id="catScheda"></td>
+                        </tr>
+                        <tr>
+                            <th>Date:</th>
+                            <td id="dateScheda"></td>
+                        </tr>
+                        <tr>
+                            <th>Luogo:</th>
+                            <td id="luogoScheda"></td>
+                        </tr>
+                        <tr>
+                            <th>Responsabile:</th>
+                            <td id="responsabileScheda"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="info-section">
+                    <h3>Note</h3>
+                    <p id="noteScheda" class="note-text"></p>
+                </div>
+
+                <div class="info-section">
+                    <h3>Personale Assegnato</h3>
+                    <div id="personaleContainer" class="data-grid"></div>
+                </div>
+
+                <div class="info-section">
+                    <h3>Attrezzature</h3>
+                    <div id="attrezzatureContainer" class="data-grid"></div>
+                </div>
+
+                <div class="info-section">
+                    <h3>Mezzi</h3>
+                    <div id="mezziContainer" class="data-grid"></div>
+                </div>
+
+                <div class="info-section">
+                    <h3>Imballi</h3>
+                    <div id="imballiContainer" class="data-grid"></div>
+                </div>
+            </div>
+
+            <div class="actions-container">
+                <button onclick="window.modificaScheda()" class="button">Modifica</button>
+                <button onclick="window.cambiaStato()" class="button">Cambia Stato</button>
+                <button onclick="window.salvaEdEsci()" class="button">Salva ed Esci</button>
+                <button onclick="history.back()" class="button">Torna Indietro</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { schedeLavoroService } from '../../js/services/schedeLavoroService.js';
+        import { handleSaveAndExit } from '../../js/modules/schedaLavoro/schedaActions.js';
+        import { formatDate } from '../../js/utils/dateUtils.js';
+
+        let schedaCorrente = null;
+
+        async function loadScheda() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            
+            if (!id) {
+                alert('ID scheda non valido');
+                history.back();
+                return;
+            }
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const schedaContainer = document.getElementById('schedaContainer');
+            
+            try {
+                const result = await schedeLavoroService.getSchedaLavoroById(id);
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                schedaCorrente = result.data;
+                
+                // Popola i dettagli della scheda
+                document.getElementById('codiceScheda').textContent = schedaCorrente.codice;
+                document.getElementById('nomeScheda').textContent = schedaCorrente.nome;
+                document.getElementById('tipoLavoroScheda').textContent = schedaCorrente.tipo_lavoro;
+                document.getElementById('produzioneScheda').textContent = schedaCorrente.produzione?.nome || '-';
+                document.getElementById('clienteScheda').textContent = schedaCorrente.cliente?.ragione_sociale || '-';
+                document.getElementById('catScheda').textContent = schedaCorrente.cat ? 
+                    `${schedaCorrente.cat.nome} ${schedaCorrente.cat.cognome}` : '-';
+                document.getElementById('dateScheda').textContent = 
+                    `Dal ${formatDate(schedaCorrente.data_inizio)} al ${formatDate(schedaCorrente.data_fine)}`;
+                document.getElementById('luogoScheda').textContent = schedaCorrente.luogo;
+                document.getElementById('responsabileScheda').textContent = schedaCorrente.responsabile ? 
+                    `${schedaCorrente.responsabile.nome} ${schedaCorrente.responsabile.cognome}` : '-';
+                document.getElementById('noteScheda').textContent = schedaCorrente.note || 'Nessuna nota';
+
+                // Imposta lo stato
+                const statoElement = document.getElementById('statoScheda');
+                statoElement.textContent = schedaCorrente.stato;
+                statoElement.className = `status-badge status-${schedaCorrente.stato.toLowerCase()}`;
+
+                loadingIndicator.style.display = 'none';
+                schedaContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                alert('Errore durante il caricamento della scheda: ' + error.message);
+                history.back();
+            }
+        }
+
+        // Global functions
+        window.modificaScheda = () => {
+            if (schedaCorrente) {
+                window.location.href = `modifica-scheda.html?id=${schedaCorrente.id}`;
+            }
+        };
+
+        window.cambiaStato = async () => {
+            if (!schedaCorrente) return;
+            const stati = ['BOZZA', 'APPROVATA', 'IN_CORSO', 'COMPLETATA', 'ANNULLATA'];
+            const statoAttuale = stati.indexOf(schedaCorrente.stato);
+            
+            if (statoAttuale < 0) return;
+
+            const nuovoStato = stati[(statoAttuale + 1) % stati.length];
+            
+            if (confirm(`Vuoi cambiare lo stato da ${schedaCorrente.stato} a ${nuovoStato}?`)) {
+                try {
+                    const result = await schedeLavoroService.updateStato(schedaCorrente.id, nuovoStato);
+                    if (result.success) {
+                        await loadScheda();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'aggiornamento dello stato: ' + error.message);
+                }
+            }
+        };
+
+        window.salvaEdEsci = () => {
+            if (schedaCorrente) {
+                handleSaveAndExit(schedaCorrente.id);
+            }
+        };
+
+        // Load scheda on page load
+        document.addEventListener('DOMContentLoaded', loadScheda);
+    </script>
+
+    <style>
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .scheda-details {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-section {
+            margin-bottom: 2rem;
+        }
+
+        .info-section h3 {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .details-table th,
+        .details-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .details-table th {
+            width: 200px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .note-text {
+            padding: 1rem;
+            background: var(--background-color);
+            border-radius: 0.375rem;
+            margin: 0;
+        }
+
+        .data-grid {
+            display: grid;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--background-color);
+            border-radius: 0.375rem;
+        }
+
+        .actions-container {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-start;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+
+        .status-bozza { background: #fef3c7; color: #92400e; }
+        .status-approvata { background: #d1fae5; color: #065f46; }
+        .status-in_corso { background: #dbeafe; color: #1e40af; }
+        .status-completata { background: #dcfce7; color: #166534; }
+        .status-annullata { background: #fee2e2; color: #991b1b; }
+    </style>
+</body>
+</html>

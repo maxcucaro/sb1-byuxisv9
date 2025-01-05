@@ -1,0 +1,63 @@
+/* Stili specifici per la pagina anagrafiche */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.settings-card {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 320px;
+}
+
+.settings-card h3 {
+    background: var(--secondary-color);
+    color: white;
+    margin: 0;
+    padding: 1.25rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    font-size: 1.25rem;
+    text-align: center;
+}
+
+.settings-card p {
+    flex: 1;
+    padding: 1.5rem;
+    margin: 0;
+    color: var(--text-color);
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.settings-card .button {
+    margin: 0 1.5rem 1.5rem;
+    width: calc(100% - 3rem);
+    background: var(--accent-color);
+    color: white;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-align: center;
+    text-decoration: none;
+}
+
+.settings-card .button:hover {
+    background-color: #0284C7;
+}
+
+@media (max-width: 768px) {
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Aggiungi Articolo</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/form.css">
+    <link rel="stylesheet" href="../../css/recent-items.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2 id="titoloForm">Aggiungi Articolo</h2>
+        
+        <div class="form-wrapper">
+            <form id="articoloForm" class="form-container">
+                <div class="form-group">
+                    <label for="descrizione">Descrizione*</label>
+                    <input type="text" id="descrizione" name="descrizione" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="categoria">Categoria*</label>
+                    <select id="categoria" name="categoria" required>
+                        <option value="">Seleziona categoria</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="quantita">Quantità*</label>
+                    <input type="number" id="quantita" name="quantita" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="base">Base (cm)</label>
+                    <input type="number" id="base" name="base" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="altezza">Altezza (cm)</label>
+                    <input type="number" id="altezza" name="altezza" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="profondita">Profondità (cm)</label>
+                    <input type="number" id="profondita" name="profondita" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="peso">Peso (kg)</label>
+                    <input type="number" id="peso" name="peso" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="ubicazione">Ubicazione</label>
+                    <input type="text" id="ubicazione" name="ubicazione">
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="attivo" name="attivo" checked>
+                        Articolo attivo
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button">Salva</button>
+                    <button type="button" class="button" onclick="history.back()">Annulla</button>
+                </div>
+            </form>
+
+            <div id="recentItemsContainer"></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { SETTORI } from '../../js/utils/constants.js';
+        import { insertArticolo } from '../../js/services/articoliService.js';
+        import { recentItemsManager } from '../../js/utils/recentItems.js';
+        import { createRecentItemsSection, updateRecentItemsList } from '../../js/components/recentItems.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const settore = params.get('settore')?.toUpperCase();
+            
+            if (settore && SETTORI[settore]) {
+                const settoreInfo = SETTORI[settore];
+                document.title = `EVENT TRACK - Aggiungi Articolo ${settoreInfo.nome}`;
+                document.getElementById('titoloForm').textContent = `Aggiungi Articolo ${settoreInfo.nome}`;
+
+                // Popola le categorie
+                const categorieSelect = document.getElementById('categoria');
+                settoreInfo.categorie.forEach(categoria => {
+                    const option = document.createElement('option');
+                    option.value = categoria;
+                    option.textContent = categoria;
+                    categorieSelect.appendChild(option);
+                });
+            }
+
+            // Aggiungi sezione articoli recenti
+            const recentItemsSection = createRecentItemsSection();
+            document.getElementById('recentItemsContainer').appendChild(recentItemsSection);
+
+            // Gestisci aggiornamenti lista
+            recentItemsManager.addListener(items => {
+                updateRecentItemsList(recentItemsSection, items);
+            });
+
+            // Gestisci click su Fine Aggiunte
+            recentItemsSection.querySelector('.finish-button').addEventListener('click', () => {
+                const items = recentItemsManager.getItems();
+                if (items.length > 0) {
+                    if (confirm(`Hai aggiunto ${items.length} articoli. Vuoi tornare alla gestione ${settore.toLowerCase()}?`)) {
+                        recentItemsManager.clear();
+                        window.location.href = `gestione_settore.html?settore=${settore.toLowerCase()}`;
+                    }
+                } else {
+                    alert('Nessun articolo aggiunto');
+                }
+            });
+
+            // Gestisci submit del form
+            document.getElementById('articoloForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = {
+                    descrizione: e.target.descrizione.value,
+                    categoria: e.target.categoria.value,
+                    quantita: parseInt(e.target.quantita.value),
+                    base: e.target.base.value ? parseFloat(e.target.base.value) : null,
+                    altezza: e.target.altezza.value ? parseFloat(e.target.altezza.value) : null,
+                    profondita: e.target.profondita.value ? parseFloat(e.target.profondita.value) : null,
+                    peso: e.target.peso.value ? parseFloat(e.target.peso.value) : null,
+                    ubicazione: e.target.ubicazione.value,
+                    attivo: e.target.attivo.checked
+                };
+
+                const result = await insertArticolo(settore, formData);
+                
+                if (result.success) {
+                    recentItemsManager.addItem({
+                        ...formData,
+                        cod: result.data[0].cod
+                    });
+                    e.target.reset();
+                    e.target.descrizione.focus();
+                } else {
+                    alert('Errore durante l\'inserimento: ' + result.error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

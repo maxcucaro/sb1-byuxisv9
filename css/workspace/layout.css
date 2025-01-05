@@ -1,0 +1,127 @@
+```css
+/* Layout principale workspace */
+.ws-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8fafc;
+}
+
+/* Header workspace */
+.ws-header {
+    background: var(--primary-color);
+    padding: 1.5rem 0;
+    color: white;
+}
+
+.ws-header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.ws-header h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.ws-tagline {
+    color: #94a3b8;
+    font-size: 0.875rem;
+}
+
+/* Navigation workspace */
+.ws-nav {
+    background: var(--secondary-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ws-nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.ws-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+}
+
+.ws-nav a {
+    display: inline-block;
+    padding: 1rem 0;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.ws-nav a:hover,
+.ws-nav a.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+}
+
+/* Main content workspace */
+.ws-main {
+    flex: 1;
+    padding: 2rem 0;
+}
+
+.ws-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Footer workspace */
+.ws-footer {
+    background: var(--primary-color);
+    color: white;
+    padding: 1.5rem 0;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .ws-nav ul {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .ws-nav a {
+        padding: 0.75rem 0;
+    }
+
+    .ws-content {
+        margin: 0 1rem;
+    }
+}
+
+/* Stati e pulsanti */
+.status-bozza { color: #f59e0b; }
+.status-approvata { color: #10b981; }
+.status-in_corso { color: #3b82f6; }
+.status-completata { color: #059669; }
+.status-annullata { color: #ef4444; }
+
+.workspace-button {
+    background-color: #10b981 !important;
+    color: white !important;
+    min-width: 120px !important;
+    text-align: center;
+}
+
+.workspace-button:hover {
+    background-color: #059669 !important;
+}
+```

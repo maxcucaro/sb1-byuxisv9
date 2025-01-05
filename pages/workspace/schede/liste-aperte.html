@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Liste Aperte</title>
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="../../../css/workspace/layout.css">
+    <link rel="stylesheet" href="../../../css/table.css">
+</head>
+<body class="ws-container">
+    <header class="ws-header">
+        <div class="ws-header-content">
+            <h1>EVENT TRACK WORKSPACE</h1>
+            <p class="ws-tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="ws-nav">
+        <div class="ws-nav-container">
+            <ul>
+                <li><a href="../../../index.html">Home</a></li>
+                <li><a href="creazione-scheda.html">Nuova Scheda</a></li>
+                <li><a href="liste-aperte.html" class="active">Liste Aperte</a></li>
+                <li><a href="richiesta.html">Richiesta</a></li>
+                <li><a href="../magazzino/preparazione.html">Preparazione</a></li>
+                <li><a href="../magazzino/movimentazione.html">Movimentazione</a></li>
+                <li><a href="../report/lista.html">Report</a></li>
+                <li><a href="storico.html">Storico</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="ws-main">
+        <div class="ws-content">
+            <h2>Liste Aperte</h2>
+
+            <div class="loading-indicator" id="loadingIndicator">Caricamento in corso...</div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Codice</th>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Riferimento</th>
+                            <th>Data Inizio</th>
+                            <th>Data Fine</th>
+                            <th>Luogo</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedeTable">
+                        <!-- La tabella verrà popolata dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="ws-footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { loadSchedeList } from '../../../js/components/schede/SchedeList.js';
+
+        // Funzioni di navigazione
+        window.visualizzaScheda = (id) => {
+            window.location.href = `visualizza-scheda.html?id=${id}`;
+        };
+
+        window.modificaScheda = (id) => {
+            window.location.href = `modifica-scheda.html?id=${id}`;
+        };
+
+        // Carica le schede all'avvio
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.getElementById('schedeTable');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadSchedeList(tableBody, loadingIndicator);
+        });
+    </script>
+
+    <style>
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .status-bozza { color: #f59e0b; }
+        .status-approvata { color: #10b981; }
+        .status-in_corso { color: #3b82f6; }
+        .status-completata { color: #059669; }
+        .status-annullata { color: #ef4444; }
+        
+        .workspace-button {
+            background-color: #10b981 !important;
+            color: white !important;
+            min-width: 120px !important;
+            text-align: center;
+        }
+        
+        .workspace-button:hover {
+            background-color: #059669 !important;
+        }
+
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+        }
+    </style>
+</body>
+</html>

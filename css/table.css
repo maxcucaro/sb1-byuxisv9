@@ -1,0 +1,83 @@
+/* Stili per i contenitori delle tabelle */
+.table-container {
+    width: 100%;
+    margin: 0 auto;
+    overflow-x: auto;
+}
+
+/* Stili per le tabelle */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    margin: 1rem 0;
+}
+
+.data-table th,
+.data-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    background: var(--background-color);
+    font-weight: 600;
+    color: var(--text-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Stili per i pulsanti nella tabella */
+.data-table td .button {
+    margin: 0.25rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.data-table td .button:first-child {
+    margin-left: 0;
+}
+
+.data-table td .button:last-child {
+    margin-right: 0;
+}
+
+/* Stile per celle vuote */
+.data-table td:empty::before {
+    content: "-";
+    color: #94a3b8;
+}
+
+/* Stile per nessun dato */
+.data-table .no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+/* Stili per gli stati */
+.data-table .status-active {
+    color: #10b981;
+    font-weight: 500;
+}
+
+.data-table .status-inactive {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .table-container {
+        margin: 0 -1rem;
+        padding: 0 1rem;
+    }
+}

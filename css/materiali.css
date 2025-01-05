@@ -1,0 +1,31 @@
+/* Stili per i pulsanti dinamici */
+.detail-button,
+.noleggio-button {
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.detail-button {
+    background: var(--accent-color);
+    color: white;
+}
+
+.detail-button:hover {
+    background: #0284C7;
+}
+
+.noleggio-button {
+    background: #f97316;
+    color: white;
+}
+
+.noleggio-button:hover {
+    background: #ea580c;
+}
+
+/* Stili esistenti... */

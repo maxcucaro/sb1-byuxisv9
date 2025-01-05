@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza CAT</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Visualizza CAT</h2>
+        <p class="section-description">Elenco completo dei CAT registrati nel sistema</p>
+
+        <div class="actions-container" style="margin: 2rem 0; display: flex; gap: 1rem;">
+            <button onclick="window.aggiungiCAT()" class="button">
+                Aggiungi Nuovo CAT
+            </button>
+            <button onclick="history.back()" class="button">
+                Torna Indietro
+            </button>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container" style="display: none;" id="tableContainer">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Nome</th>
+                        <th>Cognome</th>
+                        <th>Telefono</th>
+                        <th>Specializzazione</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="catTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { anagraficheService } from '../../js/services/anagraficheService.js';
+        import { createCatModal } from '../../js/modal/catModal.js';
+        import { supabase } from '../../js/utils/supabaseClient.js';
+
+        let isInitialized = false;
+
+        async function initializePage() {
+            if (isInitialized) return;
+            
+            createCatModal();
+            
+            const closeBtn = document.querySelector('.close-modal');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    const modal = document.getElementById('catModal');
+                    if (modal) modal.style.display = 'none';
+                };
+            }
+
+            await loadCAT();
+            
+            isInitialized = true;
+        }
+
+        async function loadCAT() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableContainer = document.getElementById('tableContainer');
+            const tableBody = document.getElementById('catTable');
+            
+            if (!loadingIndicator || !tableContainer || !tableBody) return;
+
+            try {
+                loadingIndicator.style.display = 'block';
+                tableContainer.style.display = 'none';
+
+                const result = await anagraficheService.getCAT();
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="no-data">
+                                Nessun CAT trovato
+                            </td>
+                        </tr>`;
+                } else {
+                    tableBody.innerHTML = result.data.map(cat => `
+                        <tr>
+                            <td>${cat.codice}</td>
+                            <td>${cat.nome}</td>
+                            <td>${cat.cognome}</td>
+                            <td>${cat.telefono || '-'}</td>
+                            <td>${cat.specializzazione || '-'}</td>
+                            <td class="${cat.attivo ? 'status-active' : 'status-inactive'}">
+                                ${cat.attivo ? 'Attivo' : 'Inattivo'}
+                            </td>
+                            <td>
+                                <button onclick="window.modificaCAT('${cat.id}')" class="button">
+                                    Modifica
+                                </button>
+                                <button onclick="window.toggleStatoCAT('${cat.id}', ${cat.attivo})" class="button">
+                                    ${cat.attivo ? 'Disattiva' : 'Attiva'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="error-message">
+                            ${error.message || 'Errore durante il caricamento dei CAT'}
+                        </td>
+                    </tr>`;
+            } finally {
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (tableContainer) tableContainer.style.display = 'block';
+            }
+        }
+
+        window.aggiungiCAT = async () => {
+            await initializePage();
+            
+            const modal = document.getElementById('catModal');
+            const form = document.getElementById('catForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            const modalTitle = modal.querySelector('h3');
+            if (modalTitle) {
+                modalTitle.textContent = 'Aggiungi Nuovo CAT';
+            }
+
+            form.reset();
+            
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const formData = Object.fromEntries(new FormData(form));
+                formData.attivo = form.attivo.checked;
+                
+                try {
+                    const result = await anagraficheService.addCAT(formData);
+                    if (result.success) {
+                        modal.style.display = 'none';
+                        await loadCAT();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante il salvataggio: ' + error.message);
+                }
+            };
+            
+            modal.style.display = 'block';
+        };
+
+        window.modificaCAT = async (id) => {
+            await initializePage();
+            
+            const modal = document.getElementById('catModal');
+            const form = document.getElementById('catForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('cat')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                
+                if (error) throw error;
+                if (!data) throw new Error('CAT non trovato');
+
+                const modalTitle = modal.querySelector('h3');
+                if (modalTitle) {
+                    modalTitle.textContent = `Modifica CAT - ${data.codice}`;
+                }
+                
+                Object.entries(data).forEach(([key, value]) => {
+                    const element = form.elements[key];
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = value;
+                        } else {
+                            element.value = value || '';
+                        }
+                    }
+                });
+                
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = Object.fromEntries(new FormData(form));
+                    formData.attivo = form.attivo.checked;
+                    
+                    try {
+                        const result = await anagraficheService.updateCAT(id, formData);
+                        if (result.success) {
+                            modal.style.display = 'none';
+                            await loadCAT();
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        alert('Errore durante l\'aggiornamento: ' + error.message);
+                    }
+                };
+                
+                modal.style.display = 'block';
+            } catch (error) {
+                alert('Errore durante il caricamento del CAT: ' + error.message);
+            }
+        };
+
+        window.toggleStatoCAT = async (id, statoAttuale) => {
+            if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questo CAT?`)) {
+                try {
+                    const result = await anagraficheService.toggleStatoCAT(id, !statoAttuale);
+                    if (result.success) {
+                        await loadCAT();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante la modifica dello stato: ' + error.message);
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>

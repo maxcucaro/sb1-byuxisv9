@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Gestione Tipologie Lavoro</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+    <link rel="stylesheet" href="../../css/anagrafiche.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../workspace.html">EVENT TRACK WORKSPACE</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Gestione Tipologie Lavoro</h2>
+        <p class="section-description">Configurazione e gestione delle tipologie di lavoro disponibili nel sistema</p>
+
+        <div class="settings-grid">
+            <!-- Lavoro Interno -->
+            <div class="settings-card">
+                <h3>Lavoro Interno</h3>
+                <p>Gestione dei lavori interni all'azienda<br><br>
+                   • Manutenzione<br>
+                   • Riparazioni<br>
+                   • Preparazione materiali
+                </p>
+                <button onclick="window.configuraTipologia('INTERNO')" class="button">Configura</button>
+            </div>
+
+            <!-- Noleggio -->
+            <div class="settings-card">
+                <h3>Noleggio</h3>
+                <p>Gestione dei noleggi di attrezzature<br><br>
+                   • Noleggio a caldo<br>
+                   • Noleggio a freddo<br>
+                   • Service completo
+                </p>
+                <button onclick="window.configuraTipologia('NOLEGGIO')" class="button">Configura</button>
+            </div>
+
+            <!-- Contovisione -->
+            <div class="settings-card">
+                <h3>Contovisione</h3>
+                <p>Gestione dei materiali in contovisione<br><br>
+                   • Demo prodotti<br>
+                   • Test attrezzature<br>
+                   • Valutazioni tecniche
+                </p>
+                <button onclick="window.configuraTipologia('CONTOVISIONE')" class="button">Configura</button>
+            </div>
+
+            <!-- Assistenza Tecnica -->
+            <div class="settings-card">
+                <h3>Assistenza Tecnica</h3>
+                <p>Gestione dell'assistenza tecnica<br><br>
+                   • Supporto on-site<br>
+                   • Consulenza tecnica<br>
+                   • Formazione
+                </p>
+                <button onclick="window.configuraTipologia('ASSISTENZA')" class="button">Configura</button>
+            </div>
+
+            <!-- Reso a Fornitore -->
+            <div class="settings-card">
+                <h3>Reso a Fornitore</h3>
+                <p>Gestione dei resi ai fornitori<br><br>
+                   • Riparazioni<br>
+                   • Sostituzioni<br>
+                   • Resi definitivi
+                </p>
+                <button onclick="window.configuraTipologia('RESO_FORNITORE')" class="button">Configura</button>
+            </div>
+        </div>
+
+        <div class="button-container" style="margin-top: 2rem; text-align: center;">
+            <button onclick="history.back()" class="button">Torna Indietro</button>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { tipologieLavoroService } from '../../js/services/tipologieLavoroService.js';
+        import { createTipologiaModal } from '../../js/modal/tipologiaLavoroModal.js';
+
+        // Inizializza il modal
+        createTipologiaModal();
+
+        // Funzione per configurare una tipologia
+        window.configuraTipologia = async (tipo) => {
+            const modal = document.getElementById('tipologiaModal');
+            const form = document.getElementById('tipologiaForm');
+            
+            try {
+                // Carica la configurazione esistente
+                const result = await tipologieLavoroService.getConfigurazioneTipologia(tipo);
+                if (result.success) {
+                    // Popola il form con i dati esistenti
+                    form.tipo.value = tipo;
+                    form.attivo.checked = result.data.attivo;
+                    form.richiedi_cliente.checked = result.data.richiedi_cliente;
+                    form.richiedi_preventivo.checked = result.data.richiedi_preventivo;
+                    form.richiedi_ddt.checked = result.data.richiedi_ddt;
+                    form.note.value = result.data.note || '';
+                }
+                
+                // Gestisci il submit del form
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = {
+                        tipo: tipo,
+                        attivo: form.attivo.checked,
+                        richiedi_cliente: form.richiedi_cliente.checked,
+                        richiedi_preventivo: form.richiedi_preventivo.checked,
+                        richiedi_ddt: form.richiedi_ddt.checked,
+                        note: form.note.value
+                    };
+                    
+                    try {
+                        const updateResult = await tipologieLavoroService.updateConfigurazioneTipologia(tipo, formData);
+                        if (updateResult.success) {
+                            alert('Configurazione aggiornata con successo!');
+                            modal.style.display = 'none';
+                        } else {
+                            throw new Error(updateResult.error);
+                        }
+                    } catch (error) {
+                        alert('Errore durante il salvataggio: ' + error.message);
+                    }
+                };
+                
+                modal.style.display = 'block';
+            } catch (error) {
+                alert('Errore durante il caricamento della configurazione: ' + error.message);
+            }
+        };
+
+        // Chiusura del modal
+        document.querySelector('.close-modal').onclick = () => {
+            document.getElementById('tipologiaModal').style.display = 'none';
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+/* Stili per la sezione articoli recenti */
+.recent-items {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.recent-items h3 {
+  color: var(--text-color);
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.recent-items-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+}
+
+.recent-items-list:empty {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.recent-items-list:empty::after {
+  content: "Nessun articolo aggiunto";
+}
+
+.recent-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recent-item:last-child {
+  border-bottom: none;
+}
+
+.recent-item-details {
+  flex: 1;
+}
+
+.recent-item-code {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.recent-item-desc {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.finish-button {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.finish-button:hover {
+  background-color: #0284C7;
+}

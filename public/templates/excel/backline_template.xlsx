@@ -1,0 +1,23 @@
+// File Excel binario con:
+
+Colonne (dalla tabella articoli_backline):
+1. numero
+2. codice
+3. quantita
+4. descrizione
+5. settore
+6. categoria
+7. base
+8. altezza
+9. profondita
+10. peso
+11. ubicazione
+
+Formattazione:
+- Intestazioni in grassetto con sfondo grigio chiaro (#E2E8F0)
+- Colonne alternate per facilitare la lettura:
+  - Colonne dispari: sfondo bianco
+  - Colonne pari: sfondo azzurro molto chiaro (#F8FAFC)
+- Prima riga congelata per le intestazioni
+- Nessuna protezione celle
+- Nessun testo aggiuntivo o istruzioni

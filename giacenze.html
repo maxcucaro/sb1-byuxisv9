@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Giacenze Inventario</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/table.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="giacenze.html" class="active">Giacenze Inventario</a></li>
+                <li><a href="pages/workspace/schede/liste-aperte.html">Workspace</a></li>
+                <li><a href="impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Giacenze Inventario</h2>
+        <p class="section-description">Controllo completo dell'inventario e delle giacenze di magazzino</p>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+
+        <div id="inventoryContainer">
+            <!-- Il contenuto dell'inventario verrà caricato dinamicamente -->
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { inventoryService } from './js/services/inventoryService.js';
+        import { createInventorySection } from './js/components/inventory/InventorySection.js';
+        import { SETTORI } from './js/utils/constants.js';
+
+        async function loadInventory() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const container = document.getElementById('inventoryContainer');
+
+            try {
+                const result = await inventoryService.getInventoryByDate();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                let html = '';
+                for (const [settore, articoli] of Object.entries(result.data)) {
+                    if (SETTORI[settore]) {
+                        html += createInventorySection(SETTORI[settore], articoli);
+                    }
+                }
+
+                container.innerHTML = html || '<p class="no-data">Nessun articolo trovato</p>';
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                container.innerHTML = `
+                    <div class="error-message">
+                        Errore durante il caricamento dell'inventario: ${error.message}
+                    </div>
+                `;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadInventory);
+    </script>
+
+    <style>
+        .inventory-section {
+            margin-bottom: 3rem;
+        }
+        .inventory-section:last-child {
+            margin-bottom: 0;
+        }
+        .inventory-section h3 {
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            font-size: 1.25rem;
+        }
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-style: italic;
+        }
+        .error-message {
+            color: #dc2626;
+            text-align: center;
+            padding: 1rem;
+        }
+    </style>
+</body>
+</html>

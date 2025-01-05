@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Gestione Team</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Gestione Team</h2>
+        <p class="section-description">Gestione del personale aziendale</p>
+
+        <div class="actions-container" style="margin: 2rem 0; display: flex; gap: 1rem;">
+            <button onclick="window.aggiungiDipendente()" class="button">
+                Aggiungi Dipendente
+            </button>
+            <button onclick="window.creaRuolo()" class="button">
+                Crea Nuovo Ruolo
+            </button>
+            <button onclick="history.back()" class="button">
+                Torna Indietro
+            </button>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container" style="display: none;" id="tableContainer">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Nome e Cognome</th>
+                        <th>Ruolo</th>
+                        <th>Telefono</th>
+                        <th>Email</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="teamTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { teamService } from '../../js/services/teamService.js';
+        import { createDipendenteModal } from '../../js/modal/dipendenteModal.js';
+        import { createRuoloModal } from '../../js/modal/ruoloModal.js';
+        import { createRuoloCreationModal } from '../../js/modal/ruoloCreationModal.js';
+        import { createTeamTable } from '../../js/components/team/TeamTable.js';
+        import { handleAddDipendente, handleUpdateDipendente, handleToggleStatoDipendente } from '../../js/components/team/TeamActions.js';
+
+        let isInitialized = false;
+
+        async function initializePage() {
+            if (isInitialized) return;
+            
+            // Crea i modali
+            createDipendenteModal();
+            createRuoloModal();
+            createRuoloCreationModal();
+            
+            // Setup handlers chiusura modali
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.onclick = () => {
+                    const modal = btn.closest('.modal');
+                    if (modal) modal.style.display = 'none';
+                };
+            });
+
+            await loadTeam();
+            
+            isInitialized = true;
+        }
+
+        async function loadTeam() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableContainer = document.getElementById('tableContainer');
+            const tableBody = document.getElementById('teamTable');
+            
+            try {
+                loadingIndicator.style.display = 'block';
+                tableContainer.style.display = 'none';
+
+                const result = await teamService.getTeam();
+                if (!result.success) throw new Error(result.error);
+                
+                tableBody.innerHTML = createTeamTable(result.data);
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="error-message">
+                            ${error.message || 'Errore durante il caricamento del team'}
+                        </td>
+                    </tr>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+                tableContainer.style.display = 'block';
+            }
+        }
+
+        window.aggiungiDipendente = async () => {
+            await initializePage();
+            
+            const modal = document.getElementById('dipendenteModal');
+            const form = document.getElementById('dipendenteForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            form.reset();
+            
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                try {
+                    await handleAddDipendente(form);
+                    modal.style.display = 'none';
+                    await loadTeam();
+                } catch (error) {
+                    alert('Errore durante il salvataggio: ' + error.message);
+                }
+            };
+            
+            modal.style.display = 'block';
+        };
+
+        window.modificaDipendente = async (id) => {
+            await initializePage();
+            
+            const modal = document.getElementById('dipendenteModal');
+            const form = document.getElementById('dipendenteForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            try {
+                const { data: dipendente } = await teamService.getDipendenteById(id);
+                if (!dipendente) throw new Error('Dipendente non trovato');
+
+                // Popola il form
+                Object.entries(dipendente).forEach(([key, value]) => {
+                    const element = form.elements[key];
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = value;
+                        } else {
+                            element.value = value || '';
+                        }
+                    }
+                });
+                
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    try {
+                        await handleUpdateDipendente(id, form);
+                        modal.style.display = 'none';
+                        await loadTeam();
+                    } catch (error) {
+                        alert('Errore durante l\'aggiornamento: ' + error.message);
+                    }
+                };
+                
+                modal.style.display = 'block';
+            } catch (error) {
+                alert('Errore durante il caricamento del dipendente: ' + error.message);
+            }
+        };
+
+        window.modificaRuolo = async (id) => {
+            await initializePage();
+            
+            const modal = document.getElementById('ruoloModal');
+            const form = document.getElementById('ruoloForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const formData = {
+                    ruolo: form.ruolo.value,
+                    note_modifica: form.note_modifica.value
+                };
+                
+                try {
+                    const result = await teamService.updateRuolo(id, formData);
+                    if (result.success) {
+                        modal.style.display = 'none';
+                        await loadTeam();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'aggiornamento: ' + error.message);
+                }
+            };
+            
+            modal.style.display = 'block';
+        };
+
+        window.creaRuolo = async () => {
+            await initializePage();
+            
+            const modal = document.getElementById('ruoloCreationModal');
+            const form = document.getElementById('ruoloCreationForm');
+            
+            if (!modal || !form) {
+                console.error('Modal o form non trovati');
+                return;
+            }
+
+            form.reset();
+            
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                try {
+                    const result = await teamService.createRuolo(form);
+                    if (result.success) {
+                        modal.style.display = 'none';
+                        alert('Ruolo creato con successo!');
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante la creazione del ruolo: ' + error.message);
+                }
+            };
+            
+            modal.style.display = 'block';
+        };
+
+        window.toggleStatoDipendente = async (id, statoAttuale) => {
+            if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questo dipendente?`)) {
+                try {
+                    await handleToggleStatoDipendente(id, !statoAttuale);
+                    await loadTeam();
+                } catch (error) {
+                    alert('Errore durante la modifica dello stato: ' + error.message);
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+
+    <style>
+        .status-active { color: #10b981; }
+        .status-inactive { color: #ef4444; }
+        .error-message { color: #ef4444; text-align: center; }
+    </style>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Report Schede</title>
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="../../../css/workspace/layout.css">
+    <link rel="stylesheet" href="../../../css/table.css">
+</head>
+<body class="ws-container">
+    <header class="ws-header">
+        <div class="ws-header-content">
+            <h1>EVENT TRACK WORKSPACE</h1>
+            <p class="ws-tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="ws-nav">
+        <div class="ws-nav-container">
+            <ul>
+                <li><a href="../../../index.html">Home</a></li>
+                <li><a href="../schede/creazione-scheda.html">Nuova Scheda</a></li>
+                <li><a href="../schede/liste-aperte.html">Liste Aperte</a></li>
+                <li><a href="../schede/richiesta.html">Richiesta</a></li>
+                <li><a href="../magazzino/preparazione.html">Preparazione</a></li>
+                <li><a href="../magazzino/movimentazione.html">Movimentazione</a></li>
+                <li><a href="lista.html" class="active">Report</a></li>
+                <li><a href="../schede/storico.html">Storico</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="ws-main">
+        <div class="ws-content">
+            <h2>Report Schede</h2>
+
+            <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Codice</th>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Riferimento</th>
+                            <th>Data Inizio</th>
+                            <th>Data Fine</th>
+                            <th>Luogo</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedeTable">
+                        <!-- La tabella verrà popolata dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="ws-footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { schedeLavoroService } from '../../../js/services/schedeLavoroService.js';
+        import { WORK_ORDER_TYPES } from '../../../js/constants/workOrderTypes.js';
+        import { getReferenceValue } from '../../../js/utils/referenceUtils.js';
+
+        async function loadSchede() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableBody = document.getElementById('schedeTable');
+            
+            try {
+                const result = await schedeLavoroService.getSchedeLavoro();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                // Filtra le schede non archiviate
+                const schedeAttive = result.data.filter(scheda => 
+                    !scheda.archiviata
+                );
+
+                if (!schedeAttive.length) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="no-data">
+                                Nessuna scheda da visualizzare
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = schedeAttive.map(scheda => {
+                    const refValue = getReferenceValue(scheda, scheda.tipo_lavoro, WORK_ORDER_TYPES);
+                    
+                    return `
+                        <tr>
+                            <td>${scheda.codice}</td>
+                            <td>${scheda.nome}</td>
+                            <td>${scheda.tipo_lavoro}</td>
+                            <td>${refValue || '-'}</td>
+                            <td>${new Date(scheda.data_inizio).toLocaleDateString()}</td>
+                            <td>${new Date(scheda.data_fine).toLocaleDateString()}</td>
+                            <td>${scheda.luogo}</td>
+                            <td class="status-${scheda.stato.toLowerCase()}">${scheda.stato}</td>
+                            <td>
+                                <button onclick="window.visualizzaScheda('${scheda.id}')" class="button">
+                                    Visualizza
+                                </button>
+                                <button onclick="window.generaReport('${scheda.id}')" class="button report-button">
+                                    Report
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="error-message">
+                            ${error.message || 'Errore durante il caricamento delle schede'}
+                        </td>
+                    </tr>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        // Navigation functions
+        window.visualizzaScheda = (id) => {
+            window.location.href = `../schede/visualizza-scheda.html?id=${id}`;
+        };
+
+        window.generaReport = (id) => {
+            window.location.href = `genera-report.html?id=${id}`;
+        };
+
+        // Load schede on page load
+        document.addEventListener('DOMContentLoaded', loadSchede);
+    </script>
+
+    <style>
+        .status-bozza { color: #f59e0b; }
+        .status-approvata { color: #10b981; }
+        .status-in_corso { color: #3b82f6; }
+        .status-completata { color: #059669; }
+        .status-annullata { color: #ef4444; }
+        
+        .report-button {
+            background-color: #8b5cf6 !important;
+            color: white !important;
+            min-width: 100px !important;
+        }
+        
+        .report-button:hover {
+            background-color: #7c3aed !important;
+        }
+
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+        }
+    </style>
+</body>
+</html>

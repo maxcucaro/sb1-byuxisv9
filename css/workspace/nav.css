@@ -1,0 +1,36 @@
+/* Stili specifici per la navigazione del workspace */
+.ws-nav {
+    background: var(--ws-secondary);
+    border-bottom: 1px solid var(--ws-border);
+}
+
+.ws-nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.ws-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+}
+
+.ws-nav a {
+    display: inline-block;
+    padding: 1rem 0;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.ws-nav a:hover,
+.ws-nav a.active {
+    color: var(--ws-accent);
+    border-bottom-color: var(--ws-accent);
+}

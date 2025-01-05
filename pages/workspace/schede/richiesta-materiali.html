@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Richiesta Materiali</title>
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="../../../css/workspace/layout.css">
+    <link rel="stylesheet" href="../../../css/table.css">
+    <link rel="stylesheet" href="../../../css/materiali.css">
+</head>
+<body class="ws-container">
+    <header class="ws-header">
+        <div class="ws-header-content">
+            <h1>EVENT TRACK WORKSPACE</h1>
+            <p class="ws-tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="ws-nav">
+        <div class="ws-nav-container">
+            <ul>
+                <li><a href="../../../index.html">Home</a></li>
+                <li><a href="creazione-scheda.html">Nuova Scheda</a></li>
+                <li><a href="liste-aperte.html">Liste Aperte</a></li>
+                <li><a href="richiesta.html">Richiesta</a></li>
+                <li><a href="../magazzino/preparazione.html">Preparazione</a></li>
+                <li><a href="../magazzino/movimentazione.html">Movimentazione</a></li>
+                <li><a href="../report/lista.html">Report</a></li>
+                <li><a href="storico.html">Storico</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="ws-main">
+        <div class="ws-content">
+            <h2>Richiesta Materiali</h2>
+
+            <!-- Scheda Info -->
+            <div class="scheda-info">
+                <div class="info-row">
+                    <div class="info-group">
+                        <label>Codice:</label>
+                        <span id="codiceScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Nome:</label>
+                        <span id="nomeScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Tipo:</label>
+                        <span id="tipoLavoroScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Riferimento:</label>
+                        <span id="riferimentoScheda"></span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-group">
+                        <label>Date:</label>
+                        <span id="dateScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Luogo:</label>
+                        <span id="luogoScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Responsabile:</label>
+                        <span id="responsabileScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Stato:</label>
+                        <span id="statoScheda" class="status-badge"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Materiali Container -->
+            <div id="materialiContainer"></div>
+
+            <!-- Actions -->
+            <div class="actions-container">
+                <button onclick="window.salvaRichiesta()" class="button">Salva Richiesta</button>
+                <button onclick="window.salvaECambiaStato()" class="button">Salva e Cambia Stato</button>
+                <button onclick="history.back()" class="button">Annulla</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="ws-footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { schedeLavoroService } from '../../../js/services/schedeLavoroService.js';
+        import { materialiRichiestiService } from '../../../js/services/materialiRichiestiService.js';
+        import { MaterialiManager } from '../../../js/components/materiali/MaterialiManager.js';
+        import { displaySchedaDetails } from '../../../js/components/materiali/SchedaDisplay.js';
+        import { displayMateriali } from '../../../js/components/materiali/MaterialiDisplay.js';
+        import { setupQuantityHandlers } from '../../../js/components/materiali/QuantityHandler.js';
+        import { createStatusModal, showStatusModal } from '../../../js/components/materiali/StatusModal.js';
+
+        let materialiManager;
+        let schedaCorrente;
+
+        async function initPage() {
+            const params = new URLSearchParams(window.location.search);
+            const schedaId = params.get('id');
+
+            if (!schedaId) {
+                alert('ID scheda non valido');
+                history.back();
+                return;
+            }
+
+            try {
+                const result = await schedeLavoroService.getSchedaLavoroById(schedaId);
+                if (!result.success) throw new Error(result.error);
+
+                schedaCorrente = result.data;
+                
+                // Display scheda details
+                displaySchedaDetails(schedaCorrente);
+
+                // Initialize MaterialiManager
+                materialiManager = new MaterialiManager();
+                setupQuantityHandlers(materialiManager);
+
+                // Create status modal
+                createStatusModal();
+
+                // Display materiali
+                await displayMateriali(
+                    document.getElementById('materialiContainer'),
+                    schedaCorrente.id,
+                    schedaCorrente.data_inizio
+                );
+
+            } catch (error) {
+                console.error('Errore durante l\'inizializzazione:', error);
+                alert('Errore durante l\'inizializzazione: ' + error.message);
+                history.back();
+            }
+        }
+
+        window.salvaRichiesta = async () => {
+            if (!schedaCorrente || !materialiManager) return;
+
+            try {
+                const materiali = materialiManager.getMateriali();
+                if (materiali.length === 0) {
+                    throw new Error('Seleziona almeno un materiale');
+                }
+
+                const result = await materialiRichiestiService.addRichiestaMateriali(
+                    schedaCorrente.id,
+                    materiali
+                );
+
+                if (result.success) {
+                    alert('Richiesta salvata con successo!');
+                    history.back();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                alert('Errore durante il salvataggio: ' + error.message);
+            }
+        };
+
+        window.salvaECambiaStato = async () => {
+            if (!schedaCorrente || !materialiManager) return;
+
+            try {
+                const materiali = materialiManager.getMateriali();
+                if (materiali.length === 0) {
+                    throw new Error('Seleziona almeno un materiale');
+                }
+
+                const result = await materialiRichiestiService.addRichiestaMateriali(
+                    schedaCorrente.id,
+                    materiali
+                );
+
+                if (result.success) {
+                    showStatusModal();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                alert('Errore durante il salvataggio: ' + error.message);
+            }
+        };
+
+        window.confirmStatusChange = async () => {
+            const nuovoStato = document.getElementById('nuovoStato').value;
+            if (!nuovoStato) {
+                alert('Seleziona il nuovo stato');
+                return;
+            }
+
+            try {
+                const result = await schedeLavoroService.updateStato(
+                    schedaCorrente.id,
+                    nuovoStato
+                );
+
+                if (result.success) {
+                    alert('Stato aggiornato con successo!');
+                    history.back();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                alert('Errore durante l\'aggiornamento dello stato: ' + error.message);
+            }
+        };
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+
+    <style>
+        .scheda-info {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-row {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-group {
+            flex: 1;
+        }
+
+        .info-group label {
+            font-weight: 500;
+            color: var(--text-color);
+            margin-right: 0.5rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .status-bozza { background: #fef3c7; color: #92400e; }
+        .status-approvata { background: #d1fae5; color: #065f46; }
+        .status-in_corso { background: #dbeafe; color: #1e40af; }
+        .status-completata { background: #dcfce7; color: #166534; }
+        .status-annullata { background: #fee2e2; color: #991b1b; }
+
+        .actions-container {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .settore-section {
+            margin-bottom: 2rem;
+        }
+
+        .settore-section h4 {
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            font-size: 1.25rem;
+        }
+
+        .materiali-table {
+            margin-bottom: 1.5rem;
+        }
+
+        .materiali-table h5 {
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .quantity-input {
+            width: 100px;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+        }
+
+        .note-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            resize: vertical;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Nuova Scheda Lavoro</title>
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="../../../css/form.css">
+    <link rel="stylesheet" href="../../../css/table.css">
+    <link rel="stylesheet" href="../../../css/materiali.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../../index.html">Home</a></li>
+                <li><a href="../../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h2>Nuova Scheda Lavoro</h2>
+            <a href="../index.html" class="button">Torna al Workspace</a>
+        </div>
+
+        <div class="form-container">
+            <!-- Form principale -->
+            <form id="schedaLavoroForm">
+                <div class="form-group">
+                    <label for="nome">Nome Scheda*</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_lavoro">Tipo Lavoro*</label>
+                    <div class="tipo-lavoro-container">
+                        <select id="tipo_lavoro" name="tipo_lavoro" required>
+                            <option value="">Seleziona tipo</option>
+                        </select>
+                        <div id="shortcutButtons" class="shortcut-buttons"></div>
+                    </div>
+                </div>
+
+                <div class="form-group" data-field="produzione_id" style="display: none;">
+                    <label for="produzione_id">Produzione*</label>
+                    <select id="produzione_id" name="produzione_id">
+                        <option value="">Seleziona produzione</option>
+                    </select>
+                </div>
+
+                <div class="form-group" data-field="cliente_id" style="display: none;">
+                    <label for="cliente_id">Cliente*</label>
+                    <select id="cliente_id" name="cliente_id">
+                        <option value="">Seleziona cliente</option>
+                    </select>
+                </div>
+
+                <div class="form-group" data-field="cat_id" style="display: none;">
+                    <label for="cat_id">CAT*</label>
+                    <select id="cat_id" name="cat_id">
+                        <option value="">Seleziona CAT</option>
+                    </select>
+                </div>
+
+                <div class="form-group" data-field="fornitore_id" style="display: none;">
+                    <label for="fornitore_id">Fornitore*</label>
+                    <select id="fornitore_id" name="fornitore_id">
+                        <option value="">Seleziona fornitore</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_inizio">Data Inizio*</label>
+                    <input type="date" id="data_inizio" name="data_inizio" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_fine">Data Fine*</label>
+                    <input type="date" id="data_fine" name="data_fine" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="luogo">Luogo*</label>
+                    <input type="text" id="luogo" name="luogo" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="responsabile_id">Responsabile</label>
+                    <select id="responsabile_id" name="responsabile_id">
+                        <option value="">Seleziona responsabile</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="note">Note</label>
+                    <textarea id="note" name="note" rows="4"></textarea>
+                </div>
+
+                <!-- Sezione Materiali -->
+                <div id="materialiSection"></div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button">Salva</button>
+                    <button type="button" onclick="history.back()" class="button">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { FormManager } from '../../../js/modules/schedaLavoro/formManager.js';
+        import { createShortcutButtons } from '../../../js/components/schedaLavoro/ShortcutButtons.js';
+        import { createMaterialiSection } from '../../../js/components/schedaLavoro/MaterialiSection.js';
+        import { MaterialiManager } from '../../../js/modules/schedaLavoro/materialiManager.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Inizializza form principale
+                const form = document.getElementById('schedaLavoroForm');
+                if (!form) throw new Error('Form not found');
+
+                const formManager = new FormManager(form);
+                await formManager.init();
+
+                // Setup tipo lavoro change handler
+                form.tipo_lavoro.addEventListener('change', (e) => {
+                    const tipo = e.target.value;
+                    const shortcutContainer = document.getElementById('shortcutButtons');
+                    if (shortcutContainer) {
+                        shortcutContainer.innerHTML = createShortcutButtons(tipo);
+                    }
+                });
+
+                // Inizializza sezione materiali
+                const materialiSection = document.getElementById('materialiSection');
+                if (materialiSection) {
+                    materialiSection.innerHTML = createMaterialiSection();
+                    const materialiManager = new MaterialiManager(materialiSection);
+                    
+                    // Handler globale per rimuovere materiali
+                    window.rimuoviMateriale = (codice) => {
+                        materialiManager.rimuoviMateriale(codice);
+                    };
+
+                    // Aggiorna l'handler del form per includere i materiali
+                    form.onsubmit = (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(form);
+                        const materiali = materialiManager.getMateriali();
+                        
+                        // TODO: Implementare la logica di salvataggio con i materiali
+                        console.log('Form Data:', Object.fromEntries(formData));
+                        console.log('Materiali:', materiali);
+                    };
+                }
+
+            } catch (error) {
+                console.error('Errore durante l\'inizializzazione:', error);
+                alert('Errore durante l\'inizializzazione del form: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

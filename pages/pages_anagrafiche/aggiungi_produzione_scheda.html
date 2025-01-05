@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Aggiungi Produzione</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/form.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <h2>Aggiungi Nuova Produzione</h2>
+        
+        <div class="instructions-panel">
+            <h3>Istruzioni</h3>
+            <ol>
+                <li>Compila tutti i campi richiesti nel form sottostante</li>
+                <li>Clicca su "Salva" per creare la nuova produzione</li>
+                <li>Dopo il salvataggio, la finestra si chiuderà automaticamente</li>
+                <li>Seleziona la produzione appena creata dal menu a tendina nella scheda lavoro</li>
+            </ol>
+        </div>
+
+        <div id="produzioneFormContainer">
+            <!-- Il form modale verrà inserito qui -->
+        </div>
+
+        <div class="button-container" style="margin-top: 2rem; text-align: center;">
+            <button onclick="window.close()" class="button">Chiudi</button>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { anagraficheService } from '../../js/services/anagraficheService.js';
+        import { createProduzioneModal } from '../../js/modal/produzioneModal.js';
+
+        // Mostra automaticamente il form di produzione
+        document.addEventListener('DOMContentLoaded', () => {
+            createProduzioneModal();
+            const modal = document.getElementById('produzioneModal');
+            const form = document.getElementById('produzioneForm');
+            
+            // Sposta il form nel container
+            const container = document.getElementById('produzioneFormContainer');
+            container.appendChild(modal.querySelector('.modal-content'));
+            modal.remove();
+
+            // Gestisci il submit del form
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const formData = Object.fromEntries(new FormData(form));
+                formData.attivo = form.attivo.checked;
+                
+                try {
+                    const result = await anagraficheService.addProduzione(formData);
+                    if (result.success) {
+                        alert('Produzione creata con successo! Ora puoi selezionarla nella scheda lavoro.');
+                        window.close();
+                    } else {
+                        alert('Errore durante il salvataggio: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante il salvataggio: ' + error.message);
+                }
+            };
+        });
+    </script>
+
+    <style>
+        .instructions-panel {
+            background: #f8fafc;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .instructions-panel h3 {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+        }
+
+        .instructions-panel ol {
+            margin-left: 1.5rem;
+            color: #4a5568;
+        }
+
+        .instructions-panel li {
+            margin-bottom: 0.5rem;
+        }
+
+        #produzioneFormContainer .modal-content {
+            position: static;
+            margin: 0;
+            box-shadow: none;
+            max-width: none;
+        }
+
+        #produzioneFormContainer .close-modal {
+            display: none;
+        }
+    </style>
+</body>
+</html>
