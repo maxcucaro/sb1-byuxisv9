@@ -6,6 +6,7 @@
     <title>EVENT TRACK - Giacenze Inventario</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/table.css">
+    <link rel="stylesheet" href="css/search.css">
 </head>
 <body>
     <header class="header">
@@ -18,7 +19,7 @@
     <nav class="nav">
         <div class="nav-container">
             <ul>
-                <li><a href="index.html">Home</a></li>
+                <li><a href="home.html">Home</a></li>
                 <li><a href="schede-lavori.html">Schede Lavori</a></li>
                 <li><a href="giacenze.html" class="active">Giacenze Inventario</a></li>
                 <li><a href="pages/workspace/schede/liste-aperte.html">Workspace</a></li>
@@ -28,8 +29,33 @@
     </nav>
 
     <main class="main-content">
-        <h2>Giacenze Inventario</h2>
+        <div class="header-actions">
+            <h2>Giacenze Inventario</h2>
+            <button onclick="window.downloadInventario()" class="button download-button">
+                Scarica Inventario
+            </button>
+        </div>
         <p class="section-description">Controllo completo dell'inventario e delle giacenze di magazzino</p>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Cerca per codice, descrizione, categoria..."
+                class="search-input"
+            >
+            <select id="searchFilter" class="search-filter">
+                <option value="all">Tutti i campi</option>
+                <option value="cod">Codice</option>
+                <option value="descrizione">Descrizione</option>
+                <option value="categoria">Categoria</option>
+                <option value="ubicazione">Ubicazione</option>
+            </select>
+            <select id="settoreFilter" class="search-filter">
+                <option value="all">Tutti i settori</option>
+            </select>
+        </div>
 
         <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
 
@@ -44,30 +70,190 @@
 
     <script type="module">
         import { inventoryService } from './js/services/inventoryService.js';
-        import { createInventorySection } from './js/components/inventory/InventorySection.js';
+        import { kitService } from './js/services/kitService.js';
+        import { articoliService } from './js/services/articoliService.js';
         import { SETTORI } from './js/utils/constants.js';
+        import { downloadExcel } from './js/utils/excelUtils.js';
+
+        let allArticoli = {};
+        let kitArticoli = new Map();
+        let kitComponenti = new Map();
+
+        async function loadKitInfo() {
+            try {
+                const result = await kitService.getAllKit();
+                if (result.success) {
+                    // Map per gli articoli che sono kit
+                    kitArticoli = new Map(
+                        result.data.map(kit => [`${kit.settore}-${kit.articolo_cod}`, kit])
+                    );
+
+                    // Map per gli articoli che sono componenti di kit
+                    kitComponenti = new Map();
+                    result.data.forEach(kit => {
+                        kit.kit_componenti?.forEach(comp => {
+                            const key = `${comp.componente_settore}-${comp.componente_cod}`;
+                            if (!kitComponenti.has(key)) {
+                                kitComponenti.set(key, []);
+                            }
+                            kitComponenti.get(key).push({
+                                kit_nome: kit.nome,
+                                kit_settore: kit.settore,
+                                kit_cod: kit.articolo_cod,
+                                quantita: comp.quantita
+                            });
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Errore caricamento kit:', error);
+            }
+        }
+
+        function filterArticoli(searchText, searchField, selectedSettore) {
+            const filteredData = {};
+            
+            Object.entries(allArticoli).forEach(([settore, articoli]) => {
+                if (selectedSettore !== 'all' && settore !== selectedSettore) return;
+                
+                const filteredArticoli = articoli.filter(articolo => {
+                    if (!searchText) return true;
+                    
+                    const searchLower = searchText.toLowerCase();
+                    if (searchField === 'all') {
+                        return (
+                            articolo.cod?.toLowerCase().includes(searchLower) ||
+                            articolo.descrizione?.toLowerCase().includes(searchLower) ||
+                            articolo.categoria?.toLowerCase().includes(searchLower) ||
+                            articolo.ubicazione?.toLowerCase().includes(searchLower)
+                        );
+                    }
+                    
+                    return articolo[searchField]?.toLowerCase().includes(searchLower);
+                });
+
+                if (filteredArticoli.length > 0) {
+                    filteredData[settore] = filteredArticoli;
+                }
+            });
+
+            return filteredData;
+        }
+
+        function updateDisplay(filteredData) {
+            const container = document.getElementById('inventoryContainer');
+            let html = '';
+
+            for (const [settore, articoli] of Object.entries(filteredData)) {
+                if (SETTORI[settore]) {
+                    // Group articles by category
+                    const articoliByCategoria = {};
+                    articoli.forEach(articolo => {
+                        if (!articoliByCategoria[articolo.categoria]) {
+                            articoliByCategoria[articolo.categoria] = [];
+                        }
+                        articoliByCategoria[articolo.categoria].push(articolo);
+                    });
+
+                    // Create section for each settore
+                    html += `
+                        <div class="inventory-section">
+                            <h3>${SETTORI[settore].nome}</h3>`;
+
+                    // Create tables for each category
+                    Object.entries(articoliByCategoria).forEach(([categoria, items]) => {
+                        html += `
+                            <h4 class="category-title">${categoria}</h4>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Codice</th>
+                                            <th>Descrizione</th>
+                                            <th>Quantità Totale</th>
+                                            <th>Quantità Disponibile</th>
+                                            <th>Quantità in Kit</th>
+                                            <th>Ubicazione</th>
+                                            <th>Stato</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${items.map(articolo => {
+                                            const isComponente = kitComponenti.has(`${settore}-${articolo.cod}`);
+                                            const hasKit = kitArticoli.has(`${settore}-${articolo.cod}`);
+                                            
+                                            // Calcola la quantità impegnata nei kit
+                                            let quantitaInKit = 0;
+                                            if (isComponente) {
+                                                const kits = kitComponenti.get(`${settore}-${articolo.cod}`);
+                                                quantitaInKit = kits.reduce((sum, kit) => sum + kit.quantita, 0);
+                                            }
+                                            
+                                            // La quantità disponibile è la quantità totale meno quella impegnata nei kit
+                                            const quantitaDisponibile = articolo.quantita - quantitaInKit;
+
+                                            return `
+                                                <tr>
+                                                    <td>${articolo.cod || '-'}</td>
+                                                    <td>${articolo.descrizione || '-'}</td>
+                                                    <td>${articolo.quantita || 0}</td>
+                                                    <td>${quantitaDisponibile}</td>
+                                                    <td>${quantitaInKit}</td>
+                                                    <td>${articolo.ubicazione || '-'}</td>
+                                                    <td class="${articolo.attivo ? 'status-active' : 'status-inactive'}">
+                                                        ${articolo.attivo ? 'Attivo' : 'Inattivo'}
+                                                    </td>
+                                                    <td>
+                                                        ${(hasKit || isComponente) ? `
+                                                            <button onclick="window.visualizzaKit('${settore}', '${articolo.cod}')" 
+                                                                    class="button button-green">
+                                                                KIT
+                                                            </button>
+                                                        ` : ''}
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>`;
+                    });
+
+                    html += '</div>';
+                }
+            }
+
+            container.innerHTML = html || '<p class="no-data">Nessun articolo trovato</p>';
+        }
 
         async function loadInventory() {
             const loadingIndicator = document.getElementById('loadingIndicator');
-            const container = document.getElementById('inventoryContainer');
+            const settoreFilter = document.getElementById('settoreFilter');
 
             try {
+                // Carica prima i kit
+                await loadKitInfo();
+
                 const result = await inventoryService.getInventoryByDate();
                 if (!result.success) {
                     throw new Error(result.error);
                 }
 
-                let html = '';
-                for (const [settore, articoli] of Object.entries(result.data)) {
-                    if (SETTORI[settore]) {
-                        html += createInventorySection(SETTORI[settore], articoli);
-                    }
-                }
+                allArticoli = result.data;
 
-                container.innerHTML = html || '<p class="no-data">Nessun articolo trovato</p>';
+                // Populate settore filter
+                Object.entries(SETTORI).forEach(([key, value]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = value.nome;
+                    settoreFilter.appendChild(option);
+                });
+
+                updateDisplay(allArticoli);
             } catch (error) {
                 console.error('Errore durante il caricamento:', error);
-                container.innerHTML = `
+                document.getElementById('inventoryContainer').innerHTML = `
                     <div class="error-message">
                         Errore durante il caricamento dell'inventario: ${error.message}
                     </div>
@@ -77,31 +263,359 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', loadInventory);
+        window.downloadInventario = async () => {
+            try {
+                const data = [];
+                
+                // Prepara i dati per l'export
+                Object.entries(allArticoli).forEach(([settore, articoli]) => {
+                    articoli.forEach(articolo => {
+                        const hasKit = kitArticoli.has(`${settore}-${articolo.cod}`);
+                        data.push({
+                            Settore: SETTORI[settore].nome,
+                            Categoria: articolo.categoria,
+                            Codice: articolo.cod,
+                            Descrizione: articolo.descrizione,
+                            Quantità: articolo.quantita,
+                            Ubicazione: articolo.ubicazione || '',
+                            Stato: articolo.attivo ? 'Attivo' : 'Inattivo',
+                            Kit: hasKit ? 'Sì' : 'No'
+                        });
+                    });
+                });
+
+                // Scarica il file Excel
+                await downloadExcel(data, 'Inventario');
+            } catch (error) {
+                console.error('Errore durante il download:', error);
+                alert('Errore durante il download dell\'inventario: ' + error.message);
+            }
+        };
+
+        window.visualizzaKit = async (settore, codice) => {
+            try {
+                // Verifica se l'articolo è un kit o un componente
+                const isKit = kitArticoli.has(`${settore}-${codice}`);
+                const isComponente = kitComponenti.has(`${settore}-${codice}`);
+                
+                if (!isKit && !isComponente) {
+                    throw new Error('Nessuna informazione kit trovata');
+                }
+
+                // Crea il modal se non esiste
+                let modal = document.getElementById('kitModal');
+                if (!modal) {
+                    const modalHTML = `
+                        <div id="kitModal" class="modal">
+                            <div class="modal-content">
+                                <span class="modal-close">&times;</span>
+                                <h3>Dettagli Kit</h3>
+                                <div class="kit-details"></div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                    modal = document.getElementById('kitModal');
+
+                    // Aggiungi handler per chiusura
+                    const closeBtn = modal.querySelector('.modal-close');
+                    closeBtn.onclick = () => modal.style.display = 'none';
+                    window.onclick = (e) => {
+                        if (e.target === modal) modal.style.display = 'none';
+                    };
+                }
+
+                const kitDetails = modal.querySelector('.kit-details');
+                
+                if (isKit) {
+                    // Se è un kit, mostra i suoi componenti
+                    const kit = kitArticoli.get(`${settore}-${codice}`);
+                    
+                    // Carica i dettagli dei componenti con le descrizioni
+                    const componentiPromises = (kit.kit_componenti || []).map(async comp => {
+                        try {
+                            const result = await articoliService.getArticoli(comp.componente_settore);
+                            if (!result.success) {
+                                throw new Error(`Errore caricamento articoli ${comp.componente_settore}`);
+                            }
+
+                            const articolo = result.data.find(a => a.cod === comp.componente_cod);
+                            if (!articolo) {
+                                throw new Error(`Articolo ${comp.componente_cod} non trovato`);
+                            }
+
+                            return {
+                                ...comp,
+                                descrizione: articolo.descrizione
+                            };
+                        } catch (error) {
+                            console.error(`Errore caricamento componente ${comp.componente_cod}:`, error);
+                            return {
+                                ...comp,
+                                descrizione: `Errore: ${error.message}`
+                            };
+                        }
+                    });
+
+                    const componentiConDescrizioni = await Promise.all(componentiPromises);
+
+                    kitDetails.innerHTML = `
+                        <div class="kit-info">
+                            <p><strong>Nome Kit:</strong> ${kit.nome}</p>
+                            <p><strong>Descrizione:</strong> ${kit.descrizione || '-'}</p>
+                            <p><strong>Note:</strong> ${kit.note || '-'}</p>
+                        </div>
+                        <div class="kit-components">
+                            <h4>Componenti del Kit:</h4>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Settore</th>
+                                        <th>Articoli del Kit</th>
+                                        <th>Quantità</th>
+                                        <th>Note</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${componentiConDescrizioni.map(comp => `
+                                        <tr>
+                                            <td>${SETTORI[comp.componente_settore]?.nome || comp.componente_settore}</td>
+                                            <td>${comp.descrizione || 'Descrizione non disponibile'}</td>
+                                            <td>${comp.quantita}</td>
+                                            <td>${comp.note || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    // Se è un componente, mostra i kit di cui fa parte
+                    const kits = kitComponenti.get(`${settore}-${codice}`);
+                    kitDetails.innerHTML = `
+                        <div class="kit-info">
+                            <h4>Questo articolo è utilizzato nei seguenti kit:</h4>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Settore</th>
+                                        <th>Nome Kit</th>
+                                        <th>Quantità</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${kits.map(kit => `
+                                        <tr>
+                                            <td>${SETTORI[kit.kit_settore]?.nome || kit.kit_settore}</td>
+                                            <td>${kit.kit_nome}</td>
+                                            <td>${kit.quantita}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                // Mostra il modal
+                modal.style.display = 'block';
+
+            } catch (error) {
+                console.error('Errore durante la visualizzazione del kit:', error);
+                alert('Errore durante la visualizzazione del kit: ' + error.message);
+            }
+        };
+
+        // Setup search handlers
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchText = e.target.value;
+            const searchField = document.getElementById('searchFilter').value;
+            const selectedSettore = document.getElementById('settoreFilter').value;
+            const filteredData = filterArticoli(searchText, searchField, selectedSettore);
+            updateDisplay(filteredData);
+        });
+
+        document.getElementById('searchFilter').addEventListener('change', (e) => {
+            const searchText = document.getElementById('searchInput').value;
+            const searchField = e.target.value;
+            const selectedSettore = document.getElementById('settoreFilter').value;
+            const filteredData = filterArticoli(searchText, searchField, selectedSettore);
+            updateDisplay(filteredData);
+        });
+
+        document.getElementById('settoreFilter').addEventListener('change', (e) => {
+            const searchText = document.getElementById('searchInput').value;
+            const searchField = document.getElementById('searchFilter').value;
+            const selectedSettore = e.target.value;
+            const filteredData = filterArticoli(searchText, searchField, selectedSettore);
+            updateDisplay(filteredData);
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadKitInfo(); // Load kit info first
+            await loadInventory(); // Then load inventory
+        });
     </script>
 
     <style>
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .download-button {
+            background-color: #10b981;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .download-button:hover {
+            background-color: #059669;
+        }
+
         .inventory-section {
             margin-bottom: 3rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .inventory-section:last-child {
             margin-bottom: 0;
         }
+
         .inventory-section h3 {
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             color: var(--text-color);
             font-size: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-color);
         }
+
+        .category-title {
+            margin: 1.5rem 0 1rem;
+            color: var(--text-color);
+            font-size: 1.1rem;
+            padding-left: 1rem;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .table-container {
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .table-container:last-child {
+            margin-bottom: 0;
+        }
+
+        .data-table {
+            width: 100%;
+            margin: 0;
+        }
+
+        .data-table th {
+            background: var(--background-color);
+            font-weight: 600;
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .status-active { color: #10b981; }
+        .status-inactive { color: #ef4444; }
+
         .no-data {
             text-align: center;
             padding: 2rem;
             color: #666;
             font-style: italic;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .error-message {
-            color: #dc2626;
+            color: #ef4444;
             text-align: center;
             padding: 1rem;
+            background: #fee2e2;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .button-green {
+            background-color: #10b981 !important;
+            color: white !important;
+            padding: 0.25rem 0.75rem !important;
+            font-size: 0.875rem !important;
+        }
+
+        .button-green:hover {
+            background-color: #059669 !important;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 0.5rem;
+        }
+
+        .modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: black;
+        }
+
+        .kit-info {
+            margin-bottom: 1.5rem;
+        }
+
+        .kit-components h4 {
+            margin-bottom: 1rem;
         }
     </style>
 </body>
