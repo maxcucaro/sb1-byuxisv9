@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Gestione Kit</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Gestione Kit</h2>
+        <p class="section-description">Gestione dei kit e delle loro composizioni</p>
+
+        <div class="actions-container" style="margin: 2rem 0;">
+            <button onclick="handleCreaKit()" class="button">
+                Crea Nuovo Kit
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label for="searchKit">Cerca Kit:</label>
+            <input type="text" id="searchKit" placeholder="Cerca kit per nome o descrizione">
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">
+            <div class="loading-spinner"></div>
+            <p>Caricamento in corso...</p>
+        </div>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Settore</th>
+                        <th>Nome Kit</th>
+                        <th>Articolo Principale</th>
+                        <th>Componenti</th>
+                        <th>Note</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="kitTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { kitService } from '../../js/services/kitService.js';
+        import { createKitModal } from '../../js/modal/kitModal.js';
+        import { SETTORI } from '../../js/utils/constants.js';
+        import { showKitDetails } from '../../js/utils/kitDetailsHandler.js';
+
+        let kitModal;
+
+        async function loadKit() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableBody = document.getElementById('kitTable');
+            
+            try {
+                loadingIndicator.style.display = 'block';
+                
+                const result = await kitService.getAllKit();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="no-data">
+                                Nessun kit trovato
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                let lastSettore = null;
+                tableBody.innerHTML = result.data.map(kit => {
+                    const settoreHeader = (kit.settore !== lastSettore) ? `
+                        <tr class="sector-separator">
+                            <td colspan="7">${SETTORI[kit.settore]?.nome || kit.settore}</td>
+                        </tr>` : '';
+                    lastSettore = kit.settore;
+
+                    return `
+                        ${settoreHeader}
+                        <tr>
+                            <td>${SETTORI[kit.settore]?.nome || kit.settore}</td>
+                            <td>${kit.nome}</td>
+                            <td>${kit.articolo_descrizione || kit.articolo_cod}</td>
+                            <td class="componenti-cell">
+                                <button onclick="visualizzaKit('${kit.settore}', '${kit.articolo_cod}', true)" class="button">
+                                    Visualizza Componenti
+                                </button>
+                            </td>
+                            <td>${kit.note || '-'}</td>
+                            <td class="${kit.attivo ? 'status-active' : 'status-inactive'}">
+                                ${kit.attivo ? 'Attivo' : 'Inattivo'}
+                            </td>
+                            <td>
+                                <button onclick="modificaKit('${kit.settore}', '${kit.articolo_cod}')" class="button">
+                                    Modifica
+                                </button>
+                                <button onclick="toggleStatoKit('${kit.id}', ${kit.attivo})" class="button">
+                                    ${kit.attivo ? 'Disattiva' : 'Attiva'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="error-message">
+                            ${error.message || 'Errore durante il caricamento dei kit'}
+                        </td>
+                    </tr>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        // Make loadKit available globally
+        window.loadKit = loadKit;
+
+        // Make functions globally available
+        window.handleCreaKit = () => {
+            const modal = createKitModal();
+            modal.style.display = 'block';
+        };
+
+        window.modificaKit = async (settore, articoloCod) => {
+            try {
+                const result = await kitService.getKitByArticolo(settore, articoloCod);
+                if (!result.success) throw new Error(result.error);
+
+                const kit = result.data;
+                if (!kit) throw new Error('Kit non trovato');
+
+                const modal = createKitModal();
+                const form = modal.querySelector('#kitForm');
+                
+                // Set edit mode
+                form.isEdit.value = 'true';
+                
+                // Populate form with kit data
+                form.settore.value = kit.settore;
+                form.settore.disabled = true;
+                
+                form.articolo_cod.value = kit.articolo_cod;
+                form.nome.value = kit.nome;
+                form.quantita_kit.value = kit.quantita_kit || 1;
+                form.descrizione.value = kit.descrizione || '';
+                form.note.value = kit.note || '';
+
+                // Add components
+                const componentList = form.querySelector('#componentList');
+                if (kit.kit_componenti?.length) {
+                    for (const comp of kit.kit_componenti) {
+                        await addComponent(componentList, {
+                            settore: comp.componente_settore,
+                            cod: comp.componente_cod,
+                            quantita: comp.quantita,
+                            note: comp.note
+                        });
+                    }
+                }
+
+                modal.style.display = 'block';
+            } catch (error) {
+                alert('Errore durante il caricamento del kit: ' + error.message);
+            }
+        };
+
+        window.toggleStatoKit = async (id, statoAttuale) => {
+            if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questo kit?`)) {
+                try {
+                    const result = await kitService.toggleStatoKit(id, !statoAttuale);
+                    if (result.success) {
+                        await loadKit();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante la modifica dello stato: ' + error.message);
+                }
+            }
+        };
+
+        // Make visualizzaKit available globally
+        window.visualizzaKit = showKitDetails;
+
+        // Setup search functionality
+        const searchKitInput = document.getElementById('searchKit');
+        searchKitInput.addEventListener('input', () => {
+            const searchTerm = searchKitInput.value.toLowerCase();
+            const kitItems = document.querySelectorAll('tr:not(.sector-separator)');
+            kitItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'table-row' : 'none';
+            });
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', loadKit);
+    </script>
+
+    <style>
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 1rem;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-active { color: #10b981; }
+        .status-inactive { color: #ef4444; }
+        
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+        }
+
+        .sector-separator td { 
+            background-color: #f3f4f6; 
+            font-weight: bold;
+            text-align: center;
+            padding: 0.75rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        #searchKit {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            margin-bottom: 1.5rem;
+        }
+
+        #searchKit:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+        }
+    </style>
+</body>
+</html>

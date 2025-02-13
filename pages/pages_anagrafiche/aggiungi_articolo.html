@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="../../css/form.css">
     <link rel="stylesheet" href="../../css/recent-items.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
     <header class="header">
@@ -46,27 +47,7 @@
 
                 <div class="form-group">
                     <label for="quantita">Quantità*</label>
-                    <input type="number" id="quantita" name="quantita" min="0" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="base">Base (cm)</label>
-                    <input type="number" id="base" name="base" step="0.1">
-                </div>
-
-                <div class="form-group">
-                    <label for="altezza">Altezza (cm)</label>
-                    <input type="number" id="altezza" name="altezza" step="0.1">
-                </div>
-
-                <div class="form-group">
-                    <label for="profondita">Profondità (cm)</label>
-                    <input type="number" id="profondita" name="profondita" step="0.1">
-                </div>
-
-                <div class="form-group">
-                    <label for="peso">Peso (kg)</label>
-                    <input type="number" id="peso" name="peso" step="0.1">
+                    <input type="number" id="quantita" name="quantita" min="0" value="0" required>
                 </div>
 
                 <div class="form-group">
@@ -83,7 +64,7 @@
 
                 <div class="form-actions">
                     <button type="submit" class="button">Salva</button>
-                    <button type="button" class="button" onclick="history.back()">Annulla</button>
+                    <button type="button" onclick="history.back()" class="button">Annulla</button>
                 </div>
             </form>
 
@@ -96,81 +77,101 @@
     </footer>
 
     <script type="module">
-        import { SETTORI } from '../../js/utils/constants.js';
-        import { insertArticolo } from '../../js/services/articoliService.js';
+        import { articoliService } from '../../js/services/articoliService.js';
+        import { settoriService } from '../../js/services/settoriService.js';
         import { recentItemsManager } from '../../js/utils/recentItems.js';
         import { createRecentItemsSection, updateRecentItemsList } from '../../js/components/recentItems.js';
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const params = new URLSearchParams(window.location.search);
             const settore = params.get('settore')?.toUpperCase();
             
-            if (settore && SETTORI[settore]) {
-                const settoreInfo = SETTORI[settore];
-                document.title = `EVENT TRACK - Aggiungi Articolo ${settoreInfo.nome}`;
-                document.getElementById('titoloForm').textContent = `Aggiungi Articolo ${settoreInfo.nome}`;
-
-                // Popola le categorie
-                const categorieSelect = document.getElementById('categoria');
-                settoreInfo.categorie.forEach(categoria => {
-                    const option = document.createElement('option');
-                    option.value = categoria;
-                    option.textContent = categoria;
-                    categorieSelect.appendChild(option);
-                });
+            if (!settore) {
+                alert('Settore non specificato');
+                history.back();
+                return;
             }
 
-            // Aggiungi sezione articoli recenti
-            const recentItemsSection = createRecentItemsSection();
-            document.getElementById('recentItemsContainer').appendChild(recentItemsSection);
+            // Aggiorna titolo
+            document.title = `EVENT TRACK - Aggiungi Articolo ${settore}`;
+            document.getElementById('titoloForm').textContent = `Aggiungi Articolo ${settore}`;
 
-            // Gestisci aggiornamenti lista
-            recentItemsManager.addListener(items => {
-                updateRecentItemsList(recentItemsSection, items);
-            });
-
-            // Gestisci click su Fine Aggiunte
-            recentItemsSection.querySelector('.finish-button').addEventListener('click', () => {
-                const items = recentItemsManager.getItems();
-                if (items.length > 0) {
-                    if (confirm(`Hai aggiunto ${items.length} articoli. Vuoi tornare alla gestione ${settore.toLowerCase()}?`)) {
-                        recentItemsManager.clear();
-                        window.location.href = `gestione_settore.html?settore=${settore.toLowerCase()}`;
-                    }
-                } else {
-                    alert('Nessun articolo aggiunto');
+            try {
+                // Carica le categorie dal database
+                const categorieResult = await settoriService.getCategorieBySettore(settore);
+                if (!categorieResult.success) {
+                    throw new Error(categorieResult.error);
                 }
-            });
 
-            // Gestisci submit del form
-            document.getElementById('articoloForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const formData = {
-                    descrizione: e.target.descrizione.value,
-                    categoria: e.target.categoria.value,
-                    quantita: parseInt(e.target.quantita.value),
-                    base: e.target.base.value ? parseFloat(e.target.base.value) : null,
-                    altezza: e.target.altezza.value ? parseFloat(e.target.altezza.value) : null,
-                    profondita: e.target.profondita.value ? parseFloat(e.target.profondita.value) : null,
-                    peso: e.target.peso.value ? parseFloat(e.target.peso.value) : null,
-                    ubicazione: e.target.ubicazione.value,
-                    attivo: e.target.attivo.checked
-                };
-
-                const result = await insertArticolo(settore, formData);
-                
-                if (result.success) {
-                    recentItemsManager.addItem({
-                        ...formData,
-                        cod: result.data[0].cod
+                // Popola il select delle categorie
+                const categorieSelect = document.getElementById('categoria');
+                categorieSelect.innerHTML = '<option value="">Seleziona categoria</option>';
+                categorieResult.data
+                    .filter(cat => cat.attivo)
+                    .forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.categoria;
+                        option.textContent = cat.categoria;
+                        categorieSelect.appendChild(option);
                     });
-                    e.target.reset();
-                    e.target.descrizione.focus();
-                } else {
-                    alert('Errore durante l\'inserimento: ' + result.error);
-                }
-            });
+
+                // Aggiungi sezione articoli recenti
+                const recentItemsSection = createRecentItemsSection();
+                document.getElementById('recentItemsContainer').appendChild(recentItemsSection);
+
+                // Gestisci aggiornamenti lista
+                recentItemsManager.addListener(items => {
+                    updateRecentItemsList(recentItemsSection, items);
+                });
+
+                // Gestisci click su Fine Aggiunte
+                recentItemsSection.querySelector('.finish-button').addEventListener('click', () => {
+                    const items = recentItemsManager.getItems();
+                    if (items.length > 0) {
+                        if (confirm(`Hai aggiunto ${items.length} articoli. Vuoi tornare alla gestione ${settore.toLowerCase()}?`)) {
+                            recentItemsManager.clear();
+                            window.location.href = `gestione_settore.html?settore=${settore.toLowerCase()}`;
+                        }
+                    } else {
+                        alert('Nessun articolo aggiunto');
+                    }
+                });
+
+                // Gestisci submit del form
+                document.getElementById('articoloForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const formData = {
+                        descrizione: e.target.descrizione.value,
+                        categoria: e.target.categoria.value,
+                        quantita: parseInt(e.target.quantita.value),
+                        ubicazione: e.target.ubicazione.value,
+                        attivo: e.target.attivo.checked
+                    };
+
+                    try {
+                        const result = await articoliService.insertArticolo(settore, formData);
+                        if (result.success) {
+                            recentItemsManager.addItem({
+                                ...formData,
+                                cod: result.data[0].cod
+                            });
+                            e.target.reset();
+                            e.target.attivo.checked = true;
+                            e.target.descrizione.focus();
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        alert('Errore durante l\'inserimento: ' + error.message);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Errore durante l\'inizializzazione:', error);
+                alert('Errore durante l\'inizializzazione: ' + error.message);
+                history.back();
+            }
         });
     </script>
 </body>

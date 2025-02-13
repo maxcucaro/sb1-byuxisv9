@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Sopralluoghi</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/search.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../sopralluogo.html">Sopralluogo</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../pages/workspace/schede/liste-aperte.html">Workspace</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="header-actions">
+            <h2>Sopralluoghi</h2>
+            <a href="nuovo.html" class="button">Nuovo Sopralluogo</a>
+        </div>
+
+        <div class="search-bar">
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Cerca per codice, nome evento, luogo..."
+                class="search-input"
+            >
+            <select id="searchFilter" class="search-filter">
+                <option value="all">Tutti i campi</option>
+                <option value="codice">Codice</option>
+                <option value="evento_nome">Nome Evento</option>
+                <option value="tipo_lavoro">Tipo Lavoro</option>
+                <option value="luogo">Luogo</option>
+                <option value="stato">Stato</option>
+            </select>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Nome Evento</th>
+                        <th>Tipo</th>
+                        <th>Riferimento</th>
+                        <th>Date</th>
+                        <th>Luogo</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="sopralluoghiTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { sopralluogoService } from '../../js/services/sopralluogoService.js';
+        import { WORK_ORDER_TYPES } from '../../js/constants/workOrderTypes.js';
+        import { getReferenceValue } from '../../js/utils/referenceUtils.js';
+        import { pdfService } from '../../js/services/pdfService.js';
+
+        let currentSopralluoghi = [];
+
+        function filterSopralluoghi(searchText, searchField) {
+            if (!searchText) return currentSopralluoghi;
+            
+            const searchLower = searchText.toLowerCase();
+            return currentSopralluoghi.filter(sopralluogo => {
+                if (searchField === 'all') {
+                    return (
+                        sopralluogo.codice?.toLowerCase().includes(searchLower) ||
+                        sopralluogo.evento_nome?.toLowerCase().includes(searchLower) ||
+                        sopralluogo.tipo_lavoro?.toLowerCase().includes(searchLower) ||
+                        sopralluogo.luogo?.toLowerCase().includes(searchLower) ||
+                        sopralluogo.stato?.toLowerCase().includes(searchLower)
+                    );
+                }
+                return sopralluogo[searchField]?.toString().toLowerCase().includes(searchLower);
+            });
+        }
+
+        async function loadSopralluoghi() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableBody = document.getElementById('sopralluoghiTable');
+            
+            try {
+                const result = await sopralluogoService.getSopralluoghi();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                currentSopralluoghi = result.data;
+
+                if (!currentSopralluoghi.length) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="no-data">
+                                Nessun sopralluogo trovato
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                updateTable(currentSopralluoghi);
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="error-message">
+                            ${error.message || 'Errore durante il caricamento dei sopralluoghi'}
+                        </td>
+                    </tr>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        function updateTable(sopralluoghi) {
+            const tableBody = document.getElementById('sopralluoghiTable');
+            
+            tableBody.innerHTML = sopralluoghi.map(sopralluogo => {
+                const refValue = getReferenceValue(sopralluogo, sopralluogo.tipo_lavoro, WORK_ORDER_TYPES);
+                
+                return `
+                    <tr>
+                        <td>${sopralluogo.codice}</td>
+                        <td>${sopralluogo.evento_nome}</td>
+                        <td>${sopralluogo.tipo_lavoro}</td>
+                        <td>${refValue || '-'}</td>
+                        <td>${new Date(sopralluogo.data_inizio).toLocaleDateString()} - ${new Date(sopralluogo.data_fine).toLocaleDateString()}</td>
+                        <td>${sopralluogo.luogo}</td>
+                        <td class="status-${sopralluogo.stato.toLowerCase()}">${sopralluogo.stato}</td>
+                        <td>
+                            <button onclick="window.visualizzaSopralluogo('${sopralluogo.id}')" class="button">
+                                Visualizza
+                            </button>
+                            <button onclick="window.modificaSopralluogo('${sopralluogo.id}')" class="button">
+                                Modifica
+                            </button>
+                            ${sopralluogo.stato === 'BOZZA' ? `
+                                <button onclick="window.approvaSopralluogo('${sopralluogo.id}')" class="button approve-button">
+                                    Approva
+                                </button>
+                            ` : ''}
+                            <button onclick="window.eliminaSopralluogo('${sopralluogo.id}')" class="button delete-button">
+                                Elimina
+                            </button>
+                            <button onclick="window.generaPDF('${sopralluogo.id}')" class="button pdf-button">
+                                PDF
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Setup search handlers
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchText = e.target.value;
+            const searchField = document.getElementById('searchFilter').value;
+            const filteredSopralluoghi = filterSopralluoghi(searchText, searchField);
+            updateTable(filteredSopralluoghi);
+        });
+
+        document.getElementById('searchFilter').addEventListener('change', (e) => {
+            const searchText = document.getElementById('searchInput').value;
+            const searchField = e.target.value;
+            const filteredSopralluoghi = filterSopralluoghi(searchText, searchField);
+            updateTable(filteredSopralluoghi);
+        });
+
+        // Navigation functions
+        window.visualizzaSopralluogo = (id) => {
+            window.location.href = `visualizza.html?id=${id}`;
+        };
+
+        window.modificaSopralluogo = (id) => {
+            window.location.href = `modifica.html?id=${id}`;
+        };
+
+        window.approvaSopralluogo = async (id) => {
+            if (confirm('Sei sicuro di voler approvare questo sopralluogo?')) {
+                try {
+                    const result = await sopralluogoService.updateStato(id, 'COMPLETATO');
+                    if (result.success) {
+                        await loadSopralluoghi();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'approvazione: ' + error.message);
+                }
+            }
+        };
+
+        window.eliminaSopralluogo = async (id) => {
+            if (confirm('Sei sicuro di voler eliminare questo sopralluogo? Questa azione non può essere annullata.')) {
+                try {
+                    const result = await sopralluogoService.deleteSopralluogo(id);
+                    if (result.success) {
+                        await loadSopralluoghi();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'eliminazione: ' + error.message);
+                }
+            }
+        };
+
+        window.generaPDF = async (id) => {
+            try {
+                const result = await sopralluogoService.getSopralluogoById(id);
+                if (!result.success) throw new Error(result.error);
+                
+                await pdfService.generateSopralluogoReport(result.data);
+            } catch (error) {
+                alert('Errore durante la generazione del PDF: ' + error.message);
+            }
+        };
+
+        // Load sopralluoghi on page load
+        document.addEventListener('DOMContentLoaded', loadSopralluoghi);
+    </script>
+
+    <style>
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .status-bozza { color: #f59e0b; }
+        .status-completato { color: #10b981; }
+        .status-annullato { color: #ef4444; }
+        
+        .pdf-button {
+            background-color: #8b5cf6 !important;
+            color: white !important;
+        }
+        
+        .pdf-button:hover {
+            background-color: #7c3aed !important;
+        }
+
+        .approve-button {
+            background-color: #10b981 !important;
+            color: white !important;
+        }
+        
+        .approve-button:hover {
+            background-color: #059669 !important;
+        }
+
+        .delete-button {
+            background-color: #ef4444 !important;
+            color: white !important;
+        }
+        
+        .delete-button:hover {
+            background-color: #dc2626 !important;
+        }
+
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+        }
+    </style>
+</body>
+</html>

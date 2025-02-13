@@ -82,7 +82,7 @@
             <!-- Actions -->
             <div class="actions-container">
                 <button onclick="window.salvaRichiesta()" class="button">Salva Richiesta</button>
-                <button onclick="window.salvaECambiaStato()" class="button">Salva e Cambia Stato</button>
+                <button onclick="window.salvaEAvvia()" class="button workspace-button">Salva e Avvia Preparazione</button>
                 <button onclick="history.back()" class="button">Annulla</button>
             </div>
         </div>
@@ -99,7 +99,6 @@
         import { displaySchedaDetails } from '../../../js/components/materiali/SchedaDisplay.js';
         import { displayMateriali } from '../../../js/components/materiali/MaterialiDisplay.js';
         import { setupQuantityHandlers } from '../../../js/components/materiali/QuantityHandler.js';
-        import { createStatusModal, showStatusModal } from '../../../js/components/materiali/StatusModal.js';
 
         let materialiManager;
         let schedaCorrente;
@@ -120,15 +119,13 @@
 
                 schedaCorrente = result.data;
                 
-                // Display scheda details
-                displaySchedaDetails(schedaCorrente);
-
                 // Initialize MaterialiManager
                 materialiManager = new MaterialiManager();
+                window.materialiManager = materialiManager; // Make it globally available
                 setupQuantityHandlers(materialiManager);
 
-                // Create status modal
-                createStatusModal();
+                // Display scheda details
+                displaySchedaDetails(schedaCorrente);
 
                 // Display materiali
                 await displayMateriali(
@@ -153,7 +150,7 @@
                     throw new Error('Seleziona almeno un materiale');
                 }
 
-                const result = await materialiRichiestiService.addRichiestaMateriali(
+                const result = await materialiRichiestiService.updateRichiestaMateriali(
                     schedaCorrente.id,
                     materiali
                 );
@@ -169,7 +166,7 @@
             }
         };
 
-        window.salvaECambiaStato = async () => {
+        window.salvaEAvvia = async () => {
             if (!schedaCorrente || !materialiManager) return;
 
             try {
@@ -178,42 +175,31 @@
                     throw new Error('Seleziona almeno un materiale');
                 }
 
-                const result = await materialiRichiestiService.addRichiestaMateriali(
+                // Save materials first
+                const materialiResult = await materialiRichiestiService.updateRichiestaMateriali(
                     schedaCorrente.id,
                     materiali
                 );
 
-                if (result.success) {
-                    showStatusModal();
-                } else {
-                    throw new Error(result.error);
+                if (!materialiResult.success) {
+                    throw new Error(materialiResult.error);
                 }
-            } catch (error) {
-                alert('Errore durante il salvataggio: ' + error.message);
-            }
-        };
 
-        window.confirmStatusChange = async () => {
-            const nuovoStato = document.getElementById('nuovoStato').value;
-            if (!nuovoStato) {
-                alert('Seleziona il nuovo stato');
-                return;
-            }
-
-            try {
-                const result = await schedeLavoroService.updateStato(
+                // Then update status to IN_CORSO
+                const statoResult = await schedeLavoroService.updateStato(
                     schedaCorrente.id,
-                    nuovoStato
+                    'IN_CORSO'
                 );
 
-                if (result.success) {
-                    alert('Stato aggiornato con successo!');
-                    history.back();
-                } else {
-                    throw new Error(result.error);
+                if (!statoResult.success) {
+                    throw new Error(statoResult.error);
                 }
+
+                alert('Richiesta salvata e preparazione avviata con successo!');
+                window.location.href = '../magazzino/preparazione.html';
+
             } catch (error) {
-                alert('Errore durante l\'aggiornamento dello stato: ' + error.message);
+                alert('Errore durante il salvataggio: ' + error.message);
             }
         };
 
@@ -269,40 +255,15 @@
             gap: 1rem;
             justify-content: flex-end;
         }
-
-        .settore-section {
-            margin-bottom: 2rem;
+        
+        .workspace-button {
+            background-color: #10b981 !important;
+            color: white !important;
+            min-width: 180px !important;
         }
-
-        .settore-section h4 {
-            margin-bottom: 1rem;
-            color: var(--text-color);
-            font-size: 1.25rem;
-        }
-
-        .materiali-table {
-            margin-bottom: 1.5rem;
-        }
-
-        .materiali-table h5 {
-            margin-bottom: 0.5rem;
-            color: var(--text-color);
-            font-size: 1rem;
-        }
-
-        .quantity-input {
-            width: 100px;
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.25rem;
-        }
-
-        .note-input {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.25rem;
-            resize: vertical;
+        
+        .workspace-button:hover {
+            background-color: #059669 !important;
         }
     </style>
 </body>

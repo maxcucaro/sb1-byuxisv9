@@ -94,6 +94,7 @@
     <script type="module">
         import { schedeLavoroService } from '../../../js/services/schedeLavoroService.js';
         import { materialiRichiestiService } from '../../../js/services/materialiRichiestiService.js';
+        import { kitService } from '../../../js/services/kitService.js';
         import { MaterialiManager } from '../../../js/components/materiali/MaterialiManager.js';
         import { displaySchedaDetails } from '../../../js/components/materiali/SchedaDisplay.js';
         import { displayMaterialiPreparazione } from '../../../js/components/materiali/MaterialiPreparationDisplay.js';
@@ -160,6 +161,22 @@
                 }
             } catch (error) {
                 alert('Errore durante il salvataggio: ' + error.message);
+            }
+        };
+
+        // Funzione per gestire la modifica del kit
+        window.modificaKit = async (settore, codice) => {
+            try {
+                const result = await kitService.getKitByArticolo(settore, codice);
+                if (!result.success) throw new Error(result.error);
+
+                const kit = result.data;
+                if (!kit) throw new Error('Kit non trovato');
+
+                // Redirect alla pagina di modifica del kit
+                window.location.href = `../../../pages/pages_anagrafiche/gestione_kit.html?settore=${settore}&codice=${codice}`;
+            } catch (error) {
+                alert('Errore durante il caricamento del kit: ' + error.message);
             }
         };
 

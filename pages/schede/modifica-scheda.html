@@ -1,6 +1,297 @@
-<div class="form-group">
-    <label for="responsabile_id">Responsabile*</label>
-    <select id="responsabile_id" name="responsabile_id" required>
-        <option value="">Seleziona responsabile</option>
-    </select>
-</div>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Modifica Scheda Lavoro</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/form.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/materiali.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Modifica Scheda Lavoro</h2>
+        
+        <div class="form-container">
+            <form id="schedaLavoroForm">
+                <div class="form-group">
+                    <label for="nome">Nome Scheda*</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_lavoro">Tipo Lavoro*</label>
+                    <div class="tipo-lavoro-container">
+                        <select id="tipo_lavoro" name="tipo_lavoro" required>
+                            <option value="">Seleziona tipo</option>
+                        </select>
+                        <div id="shortcutButtons" class="shortcut-buttons"></div>
+                    </div>
+                </div>
+
+                <div class="form-group" data-field="produzione_id" style="display: none;">
+                    <label for="produzione_id">Produzione*</label>
+                    <select id="produzione_id" name="produzione_id">
+                        <option value="">Seleziona produzione</option>
+                    </select>
+                </div>
+
+                <div class="form-group" data-field="cliente_id" style="display: none;">
+                    <label for="cliente_id">Cliente*</label>
+                    <select id="cliente_id" name="cliente_id">
+                        <option value="">Seleziona cliente</option>
+                    </select>
+                </div>
+
+                <div class="form-group" data-field="cat_id" style="display: none;">
+                    <label for="cat_id">CAT*</label>
+                    <select id="cat_id" name="cat_id">
+                        <option value="">Seleziona CAT</option>
+                    </select>
+                </div>
+
+                <div class="form-group" data-field="fornitore_id" style="display: none;">
+                    <label for="fornitore_id">Fornitore*</label>
+                    <select id="fornitore_id" name="fornitore_id">
+                        <option value="">Seleziona fornitore</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_inizio">Data Inizio*</label>
+                    <input type="date" id="data_inizio" name="data_inizio" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_fine">Data Fine*</label>
+                    <input type="date" id="data_fine" name="data_fine" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="luogo">Luogo*</label>
+                    <input type="text" id="luogo" name="luogo" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="responsabile_id">Responsabile</label>
+                    <select id="responsabile_id" name="responsabile_id">
+                        <option value="">Seleziona responsabile</option>
+                    </select>
+                </div>
+
+                <!-- Sezione Sopralluogo -->
+                <div class="form-section">
+                    <h3>Dettagli Sopralluogo</h3>
+                    
+                    <div class="form-group">
+                        <label for="note_sopralluogo">Note Tecniche Sopralluogo</label>
+                        <textarea id="note_sopralluogo" name="note_sopralluogo" rows="6" 
+                                placeholder="Inserisci qui i dettagli tecnici del sopralluogo (misure, distanze, specifiche tecniche, etc.)"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="link_documenti">Link Documenti</label>
+                        <input type="url" id="link_documenti" name="link_documenti" 
+                               placeholder="Inserisci il link al drive contenente foto e documenti">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="note">Note Generali</label>
+                    <textarea id="note" name="note" rows="4"></textarea>
+                </div>
+
+                <!-- Materiali Section -->
+                <div class="info-section">
+                    <h3>Materiali Richiesti</h3>
+                    <div id="materialiContainer"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button">Salva</button>
+                    <button type="button" onclick="history.back()" class="button">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { FormManager } from '../../js/modules/schedaLavoro/formManager.js';
+        import { createShortcutButtons } from '../../js/components/schedaLavoro/ShortcutButtons.js';
+        import { schedeLavoroService } from '../../js/services/schedeLavoroService.js';
+        import { materialiRichiestiService } from '../../js/services/materialiRichiestiService.js';
+        import { setFormValues } from '../../js/modules/schedaLavoro/formData.js';
+        import { displayMateriali } from '../../js/components/materiali/MaterialiDisplay.js';
+        import { MaterialiManager } from '../../js/components/materiali/MaterialiManager.js';
+        import { setupQuantityHandlers } from '../../js/components/materiali/QuantityHandler.js';
+
+        let materialiManager;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const schedaId = params.get('id');
+
+                if (!schedaId) {
+                    throw new Error('ID scheda non valido');
+                }
+
+                // Initialize form manager
+                const form = document.getElementById('schedaLavoroForm');
+                const formManager = new FormManager(form);
+                await formManager.init();
+
+                // Load scheda data
+                const result = await schedeLavoroService.getSchedaLavoroById(schedaId);
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                const scheda = result.data;
+
+                // Populate form with scheda data
+                setFormValues(form, scheda);
+
+                // Setup tipo lavoro change handler
+                form.tipo_lavoro.addEventListener('change', (e) => {
+                    const tipo = e.target.value;
+                    const shortcutContainer = document.getElementById('shortcutButtons');
+                    if (shortcutContainer) {
+                        shortcutContainer.innerHTML = createShortcutButtons(tipo);
+                    }
+                });
+
+                // Initialize MaterialiManager
+                materialiManager = new MaterialiManager();
+                setupQuantityHandlers(materialiManager);
+
+                // Display materiali with isEditing=true
+                await displayMateriali(
+                    document.getElementById('materialiContainer'),
+                    schedaId,
+                    scheda.data_inizio,
+                    true // Pass isEditing=true
+                );
+
+                // Handle form submission
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    try {
+                        const formData = Object.fromEntries(new FormData(form));
+                        
+                        // Remove empty fields
+                        Object.keys(formData).forEach(key => {
+                            if (formData[key] === '') {
+                                delete formData[key];
+                            }
+                        });
+
+                        // Update scheda
+                        const updateResult = await schedeLavoroService.updateSchedaLavoro(schedaId, formData);
+                        
+                        if (!updateResult.success) {
+                            throw new Error(updateResult.error);
+                        }
+
+                        // Update materiali if any were modified
+                        const materiali = materialiManager.getMateriali();
+                        if (materiali.length > 0) {
+                            const materialiResult = await materialiRichiestiService.updateRichiestaMateriali(
+                                schedaId,
+                                materiali
+                            );
+                            if (!materialiResult.success) {
+                                throw new Error(materialiResult.error);
+                            }
+                        }
+
+                        alert('Scheda aggiornata con successo!');
+                        window.location.href = `visualizza-scheda.html?id=${schedaId}`;
+                    } catch (error) {
+                        console.error('Errore durante il salvataggio:', error);
+                        alert('Errore durante il salvataggio: ' + error.message);
+                    }
+                };
+
+            } catch (error) {
+                console.error('Errore durante l\'inizializzazione:', error);
+                alert('Errore durante l\'inizializzazione del form: ' + error.message);
+                history.back();
+            }
+        });
+    </script>
+
+    <style>
+        .info-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .info-section h3 {
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            font-size: 1.25rem;
+        }
+
+        .tipo-lavoro-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .tipo-lavoro-container select {
+            flex: 1;
+        }
+
+        .shortcut-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .shortcut-buttons .button {
+            white-space: nowrap;
+        }
+
+        .form-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-section h3 {
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            font-size: 1.25rem;
+        }
+
+        textarea {
+            font-family: inherit;
+            line-height: 1.5;
+        }
+    </style>
+</body>
+</html>

@@ -6,6 +6,8 @@
     <title>EVENT TRACK - Workspace</title>
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="../../css/workspace/layout.css">
+    <link rel="stylesheet" href="../../css/workspace/style.css">
+    <link rel="stylesheet" href="../../css/workspace/sidebar.css">
     <link rel="stylesheet" href="../../css/table.css">
 </head>
 <body class="ws-container">
@@ -58,7 +60,46 @@
 
     <script type="module">
         import { schedeLavoroService } from '../../js/services/schedeLavoroService.js';
+        import { WorkspaceSidebar } from '../../js/components/workspace/WorkspaceSidebar.js';
 
+        // Initialize workspace sidebar
+        const sidebar = new WorkspaceSidebar({
+            position: 'left',
+            theme: 'light',
+            width: '300px'
+        });
+
+        // Set sidebar content
+        sidebar.setContent(`
+            <div class="ws-sidebar-section">
+                <h3>Accesso Rapido</h3>
+                <ul class="ws-sidebar-menu">
+                    <li><a href="schede/liste-aperte.html">Liste Aperte</a></li>
+                    <li><a href="schede/richiesta.html">Richieste Materiali</a></li>
+                    <li><a href="magazzino/preparazione.html">Preparazione</a></li>
+                </ul>
+            </div>
+            
+            <div class="ws-sidebar-section">
+                <h3>Statistiche</h3>
+                <ul class="ws-sidebar-menu">
+                    <li><a href="report/schede.html">Schede Attive</a></li>
+                    <li><a href="report/materiali.html">Materiali</a></li>
+                    <li><a href="report/movimenti.html">Movimenti</a></li>
+                </ul>
+            </div>
+
+            <div class="ws-sidebar-section">
+                <h3>Utilità</h3>
+                <ul class="ws-sidebar-menu">
+                    <li><a href="documenti/ddt.html">Genera DDT</a></li>
+                    <li><a href="documenti/report.html">Report Giornaliero</a></li>
+                    <li><a href="documenti/archivio.html">Archivio</a></li>
+                </ul>
+            </div>
+        `);
+
+        // Load schede
         async function loadSchedeNonBozza() {
             const tableBody = document.getElementById('schedeTable');
             
@@ -68,7 +109,7 @@
                     throw new Error(result.error);
                 }
 
-                // Filtra le schede per mostrare solo quelle non in bozza
+                // Filter out bozza schede
                 const schedeNonBozza = result.data.filter(scheda => scheda.stato !== 'BOZZA');
 
                 if (!schedeNonBozza.length) {

@@ -26,18 +26,60 @@
     </nav>
 
     <main class="main-content">
-        <div class="page-description">
-            <h2>Aggiungi Cliente</h2>
-            <p>Inserimento di un nuovo cliente nel sistema</p>
-            
-            <div class="button-container" style="margin-top: 2rem;">
-                <button onclick="history.back()" class="button">TORNA INDIETRO</button>
+        <h2>Aggiungi Nuovo Cliente</h2>
+        
+        <form id="clienteForm">
+            <div class="form-group">
+                <label for="ragione_sociale" class="required-field">Ragione Sociale</label>
+                <input type="text" id="ragione_sociale" name="ragione_sociale" required>
             </div>
-        </div>
+
+            <div class="form-group">
+                <label for="indirizzo">Indirizzo</label>
+                <input type="text" id="indirizzo" name="indirizzo">
+            </div>
+
+            <div class="form-group">
+                <label for="telefono">Telefono</label>
+                <input type="text" id="telefono" name="telefono">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="button">Salva</button>
+                <button type="button" onclick="history.back()" class="button">Annulla</button>
+            </div>
+        </form>
     </main>
 
     <footer class="footer">
         <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
     </footer>
+
+    <script type="module">
+        import { anagraficheService } from '../../js/services/anagraficheService.js';
+
+        document.getElementById('clienteForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            
+            const formData = Object.fromEntries(new FormData(this));
+            
+            try {
+                const result = await anagraficheService.addCliente(formData);
+                if (result.success) {
+                    alert('Cliente salvato con successo!');
+                    window.location.href = 'lista-clienti.html';
+                } else {
+                    alert('Errore durante il salvataggio: ' + result.error);
+                }
+            } catch (error) {
+                alert('Errore durante il salvataggio: ' + error.message);
+            }
+        });
+    </script>
 </body>
 </html>

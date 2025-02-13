@@ -32,12 +32,19 @@
         <p class="section-description">Gestione delle categorie per ogni settore</p>
 
         <div class="actions-container" style="margin: 2rem 0; display: flex; gap: 1rem;">
-            <button onclick="window.aggiungiCategoria()" class="button">
+            <button onclick="window.handleAggiungiCategoria()" class="button">
                 Aggiungi Categoria
             </button>
             <button onclick="history.back()" class="button">
                 Torna Indietro
             </button>
+        </div>
+
+        <div class="filter-container" style="margin: 2rem 0;">
+            <label for="filterSector">Filtra per Settore: </label>
+            <select id="filterSector" onchange="filterTable()">
+                <option value="">Tutti i settori</option>
+            </select>
         </div>
 
         <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
@@ -66,7 +73,6 @@
     <script type="module">
         import { settoriService } from '../../js/services/settoriService.js';
         import { createCategoryModal } from '../../js/modal/categoryModal.js';
-        import { SETTORI } from '../../js/utils/constants.js';
 
         let isInitialized = false;
 
@@ -92,18 +98,22 @@
             const loadingIndicator = document.getElementById('loadingIndicator');
             const tableContainer = document.getElementById('tableContainer');
             const tableBody = document.getElementById('categorieTable');
+            const filterSector = document.getElementById('filterSector');
             
             try {
+                console.log('Inizio caricamento categorie');
                 loadingIndicator.style.display = 'block';
                 tableContainer.style.display = 'none';
 
                 const result = await settoriService.getSettoriCategorie();
+                console.log('Risultato servizio:', result);  // Aggiungi questo log
                 
                 if (!result.success) {
                     throw new Error(result.error);
                 }
 
                 if (!result.data || result.data.length === 0) {
+                    console.log('Nessuna categoria trovata');
                     tableBody.innerHTML = `
                         <tr>
                             <td colspan="4" class="no-data">
@@ -111,23 +121,40 @@
                             </td>
                         </tr>`;
                 } else {
-                    tableBody.innerHTML = result.data.map(categoria => `
-                        <tr>
-                            <td>${SETTORI[categoria.settore]?.nome || categoria.settore}</td>
-                            <td>${categoria.categoria}</td>
-                            <td class="${categoria.attivo ? 'status-active' : 'status-inactive'}">
-                                ${categoria.attivo ? 'Attiva' : 'Inattiva'}
-                            </td>
-                            <td>
-                                <button onclick="window.modificaCategoria('${categoria.id}')" class="button">
-                                    Modifica
-                                </button>
-                                <button onclick="window.toggleStatoCategoria('${categoria.id}', ${categoria.attivo})" class="button">
-                                    ${categoria.attivo ? 'Disattiva' : 'Attiva'}
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('');
+                    console.log('Categorie trovate:', result.data.length);
+                    const settori = [...new Set(result.data.map(categoria => categoria.settore))];
+                    filterSector.innerHTML = '<option value="">Tutti i settori</option>' + settori.map(settore => `<option value="${settore}">${settore}</option>`).join('');
+
+                    let previousSettore = null;
+                    tableBody.innerHTML = result.data.map((categoria, index) => {
+                        let row = '';
+                        if (previousSettore && previousSettore !== categoria.settore) {
+                            row += `
+                                <tr class="separator">
+                                    <td colspan="4"><hr></td>
+                                </tr>
+                            `;
+                        }
+                        previousSettore = categoria.settore;
+                        row += `
+                            <tr>
+                                <td>${categoria.settore}</td>
+                                <td>${categoria.categoria}</td>
+                                <td class="${categoria.attivo ? 'status-active' : 'status-inactive'}">
+                                    ${categoria.attivo ? 'Attiva' : 'Inattiva'}
+                                </td>
+                                <td>
+                                    <button onclick="window.handleModificaCategoria('${categoria.id}')" class="button">
+                                        Modifica
+                                    </button>
+                                    <button onclick="window.handleToggleStatoCategoria('${categoria.id}', ${categoria.attivo})" class="button">
+                                        ${categoria.attivo ? 'Disattiva' : 'Attiva'}
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        return row;
+                    }).join('');
                 }
             } catch (error) {
                 console.error('Errore durante il caricamento:', error);
@@ -138,14 +165,13 @@
                         </td>
                     </tr>`;
             } finally {
+                console.log('Caricamento completato');
                 loadingIndicator.style.display = 'none';
                 tableContainer.style.display = 'block';
             }
         }
 
-        window.aggiungiCategoria = async () => {
-            await initializePage();
-            
+        window.handleAggiungiCategoria = async () => {
             const modal = document.getElementById('categoryModal');
             const form = document.getElementById('categoryForm');
             
@@ -153,16 +179,6 @@
                 console.error('Modal o form non trovati');
                 return;
             }
-
-            // Popola il select dei settori
-            const settoreSelect = form.settore;
-            settoreSelect.innerHTML = '<option value="">Seleziona settore</option>';
-            Object.entries(SETTORI).forEach(([key, value]) => {
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = value.nome;
-                settoreSelect.appendChild(option);
-            });
 
             form.reset();
             
@@ -194,9 +210,7 @@
             modal.style.display = 'block';
         };
 
-        window.modificaCategoria = async (id) => {
-            await initializePage();
-            
+        window.handleModificaCategoria = async (id) => {
             const modal = document.getElementById('categoryModal');
             const form = document.getElementById('categoryForm');
             
@@ -206,23 +220,20 @@
             }
 
             try {
-                const { data: categoria } = await settoriService.getCategoriaById(id);
+                const result = await settoriService.getCategoriaById(id);
+                if (!result.success) throw new Error(result.error);
+
+                const categoria = result.data;
                 if (!categoria) throw new Error('Categoria non trovata');
 
-                // Popola il form
                 form.settore.value = categoria.settore;
                 form.categoria.value = categoria.categoria;
                 form.attivo.checked = categoria.attivo;
                 
                 form.onsubmit = async (e) => {
                     e.preventDefault();
-                    const formData = {
-                        categoria: form.categoria.value,
-                        attivo: form.attivo.checked
-                    };
-                    
                     try {
-                        const result = await settoriService.updateCategoria(id, formData.categoria);
+                        const result = await settoriService.updateCategoria(id, form.categoria.value);
                         if (result.success) {
                             modal.style.display = 'none';
                             await loadCategorie();
@@ -240,10 +251,10 @@
             }
         };
 
-        window.toggleStatoCategoria = async (id, statoAttuale) => {
+        window.handleToggleStatoCategoria = async (id, statoAttuale) => {
             if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questa categoria?`)) {
                 try {
-                    const result = await settoriService.toggleCategoriaStato(id, !statoAttuale);
+                    const result = await settoriService.toggleStatoCategoria(id, !statoAttuale);
                     if (result.success) {
                         await loadCategorie();
                     } else {
@@ -256,12 +267,45 @@
         };
 
         document.addEventListener('DOMContentLoaded', initializePage);
+
+        function filterTable() {
+            const filter = document.getElementById('filterSector').value.toLowerCase();
+            const rows = document.getElementById('categorieTable').getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const settoreCell = rows[i].getElementsByTagName('td')[0];
+                if (settoreCell) {
+                    const settoreText = settoreCell.textContent || settoreCell.innerText;
+                    if (filter === "" || settoreText.toLowerCase() === filter) {
+                        rows[i].style.display = '';
+                    } else {
+                        rows[i].style.display = 'none';
+                    }
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+        }
     </script>
 
     <style>
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
         .status-active { color: #10b981; }
         .status-inactive { color: #ef4444; }
-        .error-message { color: #ef4444; text-align: center; }
+        
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+        }
+
+        .separator { 
+            background-color: #f3f4f6; 
+        }
     </style>
 </body>
 </html>

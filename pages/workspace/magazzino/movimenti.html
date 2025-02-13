@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Movimenti Inventario</title>
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="../../../css/workspace/layout.css">
+    <link rel="stylesheet" href="../../../css/table.css">
+</head>
+<body class="ws-container">
+    <header class="ws-header">
+        <div class="ws-header-content">
+            <h1>EVENT TRACK WORKSPACE</h1>
+            <p class="ws-tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="ws-nav">
+        <div class="ws-nav-container">
+            <ul>
+                <li><a href="../../../index.html">Home</a></li>
+                <li><a href="../../schede/creazione-scheda.html">Nuova Scheda</a></li>
+                <li><a href="../../schede/liste-aperte.html">Liste Aperte</a></li>
+                <li><a href="../../schede/richiesta.html">Richiesta</a></li>
+                <li><a href="preparazione.html">Preparazione</a></li>
+                <li><a href="movimenti.html" class="active">Movimenti</a></li>
+                <li><a href="../report/lista.html">Report</a></li>
+                <li><a href="../../schede/storico.html">Storico</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="ws-main">
+        <div class="ws-content">
+            <h2>Movimenti Inventario</h2>
+
+            <!-- Filtri -->
+            <div class="filters-section">
+                <div class="search-bar">
+                    <select id="settoreFilter" class="search-filter">
+                        <option value="">Tutti i settori</option>
+                    </select>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Cerca per codice, descrizione..."
+                        class="search-input"
+                    >
+                    <select id="tipoFilter" class="search-filter">
+                        <option value="">Tutti i tipi</option>
+                        <option value="IN">Carico</option>
+                        <option value="OUT">Scarico</option>
+                        <option value="TRASFERIMENTO">Trasferimento</option>
+                        <option value="RETTIFICA">Rettifica</option>
+                        <option value="NOLEGGIO">Noleggio</option>
+                    </select>
+                </div>
+                <div class="date-filters">
+                    <div class="date-group">
+                        <label for="dataInizio">Da:</label>
+                        <input type="date" id="dataInizio" class="date-input">
+                    </div>
+                    <div class="date-group">
+                        <label for="dataFine">A:</label>
+                        <input type="date" id="dataFine" class="date-input">
+                    </div>
+                    <button onclick="window.applicaFiltri()" class="button">Applica Filtri</button>
+                </div>
+            </div>
+
+            <!-- Loading Container -->
+            <div id="loadingContainer" class="loading-container" style="display: none;">
+                <div class="loading-spinner">
+                    <div class="spinner-circle"></div>
+                    <div class="spinner-percentage">0%</div>
+                </div>
+                <p class="loading-text">Caricamento in corso...</p>
+            </div>
+
+            <!-- Tabella Movimenti -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Settore</th>
+                            <th>Codice</th>
+                            <th>Descrizione</th>
+                            <th>Tipo</th>
+                            <th>Quantità</th>
+                            <th>Scheda</th>
+                            <th>Operatore</th>
+                            <th>Stato</th>
+                            <th>Note</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="movimentiTable">
+                        <!-- La tabella verrà popolata dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginazione -->
+            <div class="pagination">
+                <button id="prevPage" class="button" disabled>&lt; Precedente</button>
+                <span id="pageInfo">Pagina 1</span>
+                <button id="nextPage" class="button">Successiva &gt;</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="ws-footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { supabase } from '../../../js/utils/supabaseClient.js';
+        import { SETTORI } from '../../../js/utils/constants.js';
+        import { LoadingIndicator } from '../../../js/components/materiali/LoadingIndicator.js';
+
+        const ITEMS_PER_PAGE = 50;
+        let currentPage = 0;
+        let totalItems = 0;
+        const loadingIndicator = new LoadingIndicator(document.getElementById('loadingContainer'));
+
+        async function initPage() {
+            // Popola settori
+            const settoreFilter = document.getElementById('settoreFilter');
+            Object.entries(SETTORI).forEach(([key, value]) => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = value.nome;
+                settoreFilter.appendChild(option);
+            });
+
+            // Imposta date di default
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            document.getElementById('dataInizio').value = thirtyDaysAgo.toISOString().split('T')[0];
+            document.getElementById('dataFine').value = today.toISOString().split('T')[0];
+
+            // Carica i movimenti
+            await loadMovimenti();
+
+            // Setup event handlers
+            setupEventHandlers();
+        }
+
+        function setupEventHandlers() {
+            // Filtri
+            document.getElementById('prevPage').onclick = () => {
+                if (currentPage > 0) {
+                    currentPage--;
+                    loadMovimenti();
+                }
+            };
+
+            document.getElementById('nextPage').onclick = () => {
+                if ((currentPage + 1) * ITEMS_PER_PAGE < totalItems) {
+                    currentPage++;
+                    loadMovimenti();
+                }
+            };
+
+            // Search input
+            let searchTimeout;
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    currentPage = 0;
+                    loadMovimenti();
+                }, 300);
+            });
+
+            // Filters
+            ['settoreFilter', 'tipoFilter'].forEach(id => {
+                document.getElementById(id).addEventListener('change', () => {
+                    currentPage = 0;
+                    loadMovimenti();
+                });
+            });
+        }
+
+        window.applicaFiltri = () => {
+            currentPage = 0;
+            loadMovimenti();
+        };
+
+        async function loadMovimenti() {
+            loadingIndicator.show();
+            loadingIndicator.updateProgress(30, 'Caricamento movimenti...');
+
+            try {
+                // Build query
+                let query = supabase
+                    .from('inventario_movimenti')
+                    .select(`
+                        *,
+                        schede_lavoro (codice, nome),
+                        team (nome, cognome)
+                    `, { count: 'exact' });
+
+                // Apply filters
+                const settore = document.getElementById('settoreFilter').value;
+                const searchText = document.getElementById('searchInput').value;
+                const tipo = document.getElementById('tipoFilter').value;
+                const dataInizio = document.getElementById('dataInizio').value;
+                const dataFine = document.getElementById('dataFine').value;
+
+                if (settore) {
+                    query = query.eq('settore', settore);
+                }
+                if (tipo) {
+                    query = query.eq('tipo', tipo);
+                }
+                if (searchText) {
+                    query = query.or(`articolo_cod.ilike.%${searchText}%,note.ilike.%${searchText}%`);
+                }
+                if (dataInizio) {
+                    query = query.gte('data_movimento', `${dataInizio}T00:00:00`);
+                }
+                if (dataFine) {
+                    query = query.lte('data_movimento', `${dataFine}T23:59:59`);
+                }
+
+                // Add pagination
+                query = query
+                    .order('data_movimento', { ascending: false })
+                    .range(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE - 1);
+
+                loadingIndicator.updateProgress(60, 'Elaborazione dati...');
+
+                // Execute query
+                const { data: movimenti, count, error } = await query;
+
+                if (error) throw error;
+
+                totalItems = count || 0;
+
+                // Update table
+                const tableBody = document.getElementById('movimentiTable');
+                
+                if (!movimenti?.length) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="11" class="no-data">
+                                Nessun movimento trovato
+                            </td>
+                        </tr>`;
+                } else {
+                    tableBody.innerHTML = movimenti.map(movimento => `
+                        <tr>
+                            <td>${new Date(movimento.data_movimento).toLocaleString()}</td>
+                            <td>${SETTORI[movimento.settore]?.nome || movimento.settore}</td>
+                            <td>${movimento.articolo_cod}</td>
+                            <td>${movimento.descrizione || '-'}</td>
+                            <td class="tipo-${movimento.tipo.toLowerCase()}">${movimento.tipo}</td>
+                            <td>${movimento.quantita}</td>
+                            <td>${movimento.schede_lavoro?.codice || '-'}</td>
+                            <td>${movimento.team ? `${movimento.team.nome} ${movimento.team.cognome}` : '-'}</td>
+                            <td class="stato-${movimento.stato.toLowerCase()}">${movimento.stato}</td>
+                            <td>${movimento.note || '-'}</td>
+                            <td>
+                                <button onclick="window.visualizzaDettagli('${movimento.id}')" class="button">
+                                    Dettagli
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Update pagination
+                document.getElementById('prevPage').disabled = currentPage === 0;
+                document.getElementById('nextPage').disabled = (currentPage + 1) * ITEMS_PER_PAGE >= totalItems;
+                document.getElementById('pageInfo').textContent = 
+                    `Pagina ${currentPage + 1} di ${Math.ceil(totalItems / ITEMS_PER_PAGE)}`;
+
+                loadingIndicator.updateProgress(100, 'Completato');
+            } catch (error) {
+                console.error('Errore durante il caricamento dei movimenti:', error);
+                document.getElementById('movimentiTable').innerHTML = `
+                    <tr>
+                        <td colspan="11" class="error-message">
+                            Errore durante il caricamento: ${error.message}
+                        </td>
+                    </tr>`;
+            } finally {
+                setTimeout(() => loadingIndicator.hide(), 500);
+            }
+        }
+
+        window.visualizzaDettagli = async (id) => {
+            try {
+                const { data: movimento, error } = await supabase
+                    .from('inventario_movimenti')
+                    .select(`
+                        *,
+                        schede_lavoro (codice, nome),
+                        team (nome, cognome),
+                        fornitori (ragione_sociale),
+                        clienti (ragione_sociale)
+                    `)
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+
+                // Create modal
+                let modal = document.getElementById('dettagliModal');
+                if (!modal) {
+                    modal = createDettagliModal();
+                }
+
+                const modalContent = `
+                    <div class="modal-header">
+                        <h3>Dettagli Movimento</h3>
+                        <span class="modal-close">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Data:</label>
+                                <span>${new Date(movimento.data_movimento).toLocaleString()}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Tipo:</label>
+                                <span class="tipo-${movimento.tipo.toLowerCase()}">${movimento.tipo}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Stato:</label>
+                                <span class="stato-${movimento.stato.toLowerCase()}">${movimento.stato}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Articolo:</label>
+                                <span>${movimento.articolo_cod}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Quantità:</label>
+                                <span>${movimento.quantita}</span>
+                            </div>
+                            ${movimento.schede_lavoro ? `
+                                <div class="info-item">
+                                    <label>Scheda:</label>
+                                    <span>${movimento.schede_lavoro.codice} - ${movimento.schede_lavoro.nome}</span>
+                                </div>
+                            ` : ''}
+                            ${movimento.team ? `
+                                <div class="info-item">
+                                    <label>Operatore:</label>
+                                    <span>${movimento.team.nome} ${movimento.team.cognome}</span>
+                                </div>
+                            ` : ''}
+                            ${movimento.fornitori ? `
+                                <div class="info-item">
+                                    <label>Fornitore:</label>
+                                    <span>${movimento.fornitori.ragione_sociale}</span>
+                                </div>
+                            ` : ''}
+                            ${movimento.clienti ? `
+                                <div class="info-item">
+                                    <label>Cliente:</label>
+                                    <span>${movimento.clienti.ragione_sociale}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        ${movimento.note ? `
+                            <div class="note-section">
+                                <h4>Note</h4>
+                                <p>${movimento.note}</p>
+                            </div>
+                        ` : ''}
+
+                        ${movimento.tipo === 'NOLEGGIO' ? `
+                            <div class="noleggio-section">
+                                <h4>Dettagli Noleggio</h4>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>Data Inizio:</label>
+                                        <span>${new Date(movimento.data_inizio_noleggio).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Data Fine:</label>
+                                        <span>${new Date(movimento.data_fine_noleggio).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Prezzo:</label>
+                                        <span>${movimento.prezzo ? `€ ${movimento.prezzo.toFixed(2)}` : '-'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${movimento.ddt_numero ? `
+                            <div class="ddt-section">
+                                <h4>Dettagli DDT</h4>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>Numero DDT:</label>
+                                        <span>${movimento.ddt_numero}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Data DDT:</label>
+                                        <span>${new Date(movimento.ddt_data).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                modal.querySelector('.modal-content').innerHTML = modalContent;
+
+                // Setup close handler
+                const closeBtn = modal.querySelector('.modal-close');
+                closeBtn.onclick = () => modal.style.display = 'none';
+
+                modal.style.display = 'block';
+
+            } catch (error) {
+                console.error('Errore durante il recupero dei dettagli:', error);
+                alert('Errore durante il recupero dei dettagli: ' + error.message);
+            }
+        };
+
+        function createDettagliModal() {
+            const modalHTML = `
+                <div id="dettagliModal" class="modal">
+                    <div class="modal-content">
+                        <!-- Content will be dynamically inserted -->
+                    </div>
+                </div>
+                
+                <style>
+                    .modal {
+                        display: none;
+                        position: fixed;
+                        z-index: 1000;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        height: 100%;
+                        overflow: auto;
+                        background-color: rgba(0,0,0,0.4);
+                    }
+
+                    .modal-content {
+                        background-color: #fefefe;
+                        margin: 5% auto;
+                        padding: 0;
+                        border: 1px solid #888;
+                        width: 90%;
+                        max-width: 1000px;
+                        border-radius: 0.5rem;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .modal-header {
+                        background: var(--primary-color);
+                        color: white;
+                        padding: 1.25rem;
+                        border-radius: 0.5rem 0.5rem 0 0;
+                        position: relative;
+                    }
+
+                    .modal-header h3 {
+                        margin: 0;
+                        font-size: 1.25rem;
+                    }
+
+                    .modal-close {
+                        position: absolute;
+                        right: 1.25rem;
+                        top: 1.25rem;
+                        color: white;
+                        font-size: 1.5rem;
+                        font-weight: bold;
+                        cursor: pointer;
+                    }
+
+                    .modal-close:hover {
+                        opacity: 0.8;
+                    }
+
+                    .modal-body {
+                        padding: 1.5rem;
+                    }
+
+                    .info-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 1rem;
+                        margin-bottom: 1.5rem;
+                    }
+
+                    .info-item {
+                        background: #f8fafc;
+                        padding: 1rem;
+                        border-radius: 0.5rem;
+                    }
+
+                    .info-item label {
+                        display: block;
+                        font-weight: 500;
+                        color: #64748b;
+                        margin-bottom: 0.25rem;
+                    }
+
+                    .info-item span {
+                        font-size: 1.1rem;
+                        color: var(--text-color);
+                    }
+
+                    .note-section,
+                    .noleggio-section,
+                    .ddt-section {
+                        margin-top: 1.5rem;
+                        padding-top: 1.5rem;
+                        border-top: 1px solid var(--border-color);
+                    }
+
+                    .note-section h4,
+                    .noleggio-section h4,
+                    .ddt-section h4 {
+                        color: var(--text-color);
+                        margin: 0 0 1rem 0;
+                    }
+
+                    .tipo-in { color: #10b981; }
+                    .tipo-out { color: #ef4444; }
+                    .tipo-trasferimento { color: #3b82f6; }
+                    .tipo-rettifica { color: #f59e0b; }
+                    .tipo-noleggio { color: #8b5cf6; }
+
+                    .stato-pending { color: #f59e0b; }
+                    .stato-completed { color: #10b981; }
+                    .stato-cancelled { color: #ef4444; }
+                </style>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            const modal = document.getElementById('dettagliModal');
+
+            // Setup global click handler
+            window.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };
+
+            return modal;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+
+    <style>
+        .filters-section {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .search-filter {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            min-width: 150px;
+        }
+
+        .date-filters {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .date-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .date-input {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .pagination .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .tipo-in { color: #10b981; }
+        .tipo-out { color: #ef4444; }
+        .tipo-trasferimento { color: #3b82f6; }
+        .tipo-rettifica { color: #f59e0b; }
+        .tipo-noleggio { color: #8b5cf6; }
+
+        .stato-pending { color: #f59e0b; }
+        .stato-completed { color: #10b981; }
+        .stato-cancelled { color: #ef4444; }
+
+        @media (max-width: 768px) {
+            .search-bar,
+            .date-filters {
+                flex-direction: column;
+            }
+
+            .date-group {
+                width: 100%;
+            }
+
+            .date-input {
+                flex: 1;
+            }
+        }
+    </style>
+</body>
+</html>

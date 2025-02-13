@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVENT TRACK - Gestione Settore</title>
     <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/anagrafiche.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
     <header class="header">
@@ -17,7 +19,7 @@
     <nav class="nav">
         <div class="nav-container">
             <ul>
-                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../home.html">Home</a></li>
                 <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
                 <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
                 <li><a href="../../impostazioni.html">Impostazioni</a></li>
@@ -29,9 +31,31 @@
         <h2 id="titoloSettore">Gestione Settore</h2>
         <p class="section-description" id="descrizioneSettore">Gestione degli articoli del settore</p>
 
-        <div class="button-container" style="margin-top: 2rem; display: flex; gap: 1rem;">
-            <a href="#" id="aggiungiLink" class="button">Aggiungi Articolo</a>
-            <a href="#" id="visualizzaLink" class="button">Visualizza Articoli</a>
+        <div class="settings-grid">
+            <!-- Aggiungi Articoli -->
+            <div class="settings-card">
+                <h3>Aggiungi Articoli</h3>
+                <p>Inserimento nuovi articoli<br><br>
+                   • Dati articolo<br>
+                   • Quantità<br>
+                   • Ubicazione
+                </p>
+                <a href="#" id="aggiungiLink" class="button">AGGIUNGI</a>
+            </div>
+
+            <!-- Visualizza Articoli -->
+            <div class="settings-card">
+                <h3>Visualizza Articoli</h3>
+                <p>Gestione articoli esistenti<br><br>
+                   • Lista articoli<br>
+                   • Modifica dati<br>
+                   • Gestione stato
+                </p>
+                <a href="#" id="visualizzaLink" class="button">VISUALIZZA</a>
+            </div>
+        </div>
+
+        <div class="button-container" style="margin-top: 2rem;">
             <button onclick="history.back()" class="button">Torna Indietro</button>
         </div>
     </main>
@@ -61,6 +85,7 @@
                     `visualizza_articoli.html?settore=${settore.toLowerCase()}`;
             } else {
                 console.error('Settore non valido:', settore);
+                history.back();
             }
         });
     </script>

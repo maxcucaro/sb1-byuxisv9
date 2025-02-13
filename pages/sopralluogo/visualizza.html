@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Sopralluogo</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../sopralluogo.html">Sopralluogo</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../pages/workspace/schede/liste-aperte.html">Workspace</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div id="sopralluogoContainer" style="display: none;">
+            <div class="header-actions">
+                <h2>Sopralluogo <span id="codiceSopralluogo"></span></h2>
+                <div class="status-badge" id="statoSopralluogo"></div>
+            </div>
+
+            <div class="sopralluogo-details">
+                <!-- Dati Evento -->
+                <div class="info-section">
+                    <h3>Dati Evento</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Nome Evento:</th>
+                            <td id="eventoNome"></td>
+                        </tr>
+                        <tr>
+                            <th>Tipo Lavoro:</th>
+                            <td id="tipoLavoro"></td>
+                        </tr>
+                        <tr>
+                            <th>Riferimento:</th>
+                            <td id="riferimento"></td>
+                        </tr>
+                        <tr>
+                            <th>Tipologia Evento:</th>
+                            <td id="eventoTipologia"></td>
+                        </tr>
+                        <tr>
+                            <th>Referente Evento:</th>
+                            <td id="eventoReferente"></td>
+                        </tr>
+                        <tr>
+                            <th>Date:</th>
+                            <td id="date"></td>
+                        </tr>
+                        <tr>
+                            <th>Luogo:</th>
+                            <td id="luogo"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Location -->
+                <div class="info-section">
+                    <h3>Location</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Nome Location:</th>
+                            <td id="locationNome"></td>
+                        </tr>
+                        <tr>
+                            <th>Indirizzo:</th>
+                            <td id="locationIndirizzo"></td>
+                        </tr>
+                        <tr>
+                            <th>Referente:</th>
+                            <td id="locationReferente"></td>
+                        </tr>
+                        <tr>
+                            <th>Dimensioni:</th>
+                            <td id="locationDimensioni"></td>
+                        </tr>
+                        <tr>
+                            <th>Posizione Regia:</th>
+                            <td id="locationPosizioneRegia"></td>
+                        </tr>
+                        <tr>
+                            <th>Distanza Regia-Palco:</th>
+                            <td id="locationDistanzaRegiaPalco"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Accessibilità -->
+                <div class="info-section">
+                    <h3>Accessibilità</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Parcheggio:</th>
+                            <td id="accessibilitaParcheggio"></td>
+                        </tr>
+                        <tr>
+                            <th>Carico/Scarico:</th>
+                            <td id="accessibilitaCarico"></td>
+                        </tr>
+                        <tr>
+                            <th>Ascensori:</th>
+                            <td id="accessibilitaAscensori"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Piano Lavoro -->
+                <div class="info-section">
+                    <h3>Piano Lavoro</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Scarico:</th>
+                            <td id="pianoScarico"></td>
+                        </tr>
+                        <tr>
+                            <th>Montaggio:</th>
+                            <td id="pianoMontaggio"></td>
+                        </tr>
+                        <tr>
+                            <th>Prove:</th>
+                            <td id="pianoProve"></td>
+                        </tr>
+                        <tr>
+                            <th>Evento:</th>
+                            <td id="pianoEvento"></td>
+                        </tr>
+                        <tr>
+                            <th>Smontaggio:</th>
+                            <td id="pianoSmontaggio"></td>
+                        </tr>
+                        <tr>
+                            <th>Ricarico:</th>
+                            <td id="pianoRicarico"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Palco -->
+                <div class="info-section">
+                    <h3>Palco</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Lunghezza:</th>
+                            <td id="palcoLunghezza"></td>
+                        </tr>
+                        <tr>
+                            <th>Larghezza:</th>
+                            <td id="palcoLarghezza"></td>
+                        </tr>
+                        <tr>
+                            <th>Altezza:</th>
+                            <td id="palcoAltezza"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Strutture -->
+                <div class="info-section">
+                    <h3>Strutture</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Pedanamento:</th>
+                            <td id="strutturePedanamento"></td>
+                        </tr>
+                        <tr>
+                            <th>Truss:</th>
+                            <td id="struttureTruss"></td>
+                        </tr>
+                        <tr>
+                            <th>Elevatori:</th>
+                            <td id="struttureElevatori"></td>
+                        </tr>
+                        <tr>
+                            <th>Motori:</th>
+                            <td id="struttureMotori"></td>
+                        </tr>
+                        <tr>
+                            <th>Ancoraggi/Zavorre:</th>
+                            <td id="struttureAncoraggiZavorre"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Video -->
+                <div class="info-section">
+                    <h3>Video</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>LED Wall:</th>
+                            <td id="videoLedwall"></td>
+                        </tr>
+                        <tr>
+                            <th>Proiezione:</th>
+                            <td id="videoProiezione"></td>
+                        </tr>
+                        <tr>
+                            <th>Monitor:</th>
+                            <td id="videoMonitor"></td>
+                        </tr>
+                        <tr>
+                            <th>Riprese:</th>
+                            <td id="videoRiprese"></td>
+                        </tr>
+                        <tr>
+                            <th>PC Contributi:</th>
+                            <td id="videoPcContributi"></td>
+                        </tr>
+                        <tr>
+                            <th>PC Slide:</th>
+                            <td id="videoPcSlide"></td>
+                        </tr>
+                        <tr>
+                            <th>Note:</th>
+                            <td id="videoNote"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Audio -->
+                <div class="info-section">
+                    <h3>Audio</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Regia:</th>
+                            <td id="audioRegia"></td>
+                        </tr>
+                        <tr>
+                            <th>PA System:</th>
+                            <td id="audioPa"></td>
+                        </tr>
+                        <tr>
+                            <th>Monitor:</th>
+                            <td id="audioMonitor"></td>
+                        </tr>
+                        <tr>
+                            <th>Radiomicrofoni:</th>
+                            <td id="audioRadiomicrofoni"></td>
+                        </tr>
+                        <tr>
+                            <th>Microfoni Podio:</th>
+                            <td id="audioMicPodio"></td>
+                        </tr>
+                        <tr>
+                            <th>Microfoni Tavolo:</th>
+                            <td id="audioMicTavolo"></td>
+                        </tr>
+                        <tr>
+                            <th>Note:</th>
+                            <td id="audioNote"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Luci -->
+                <div class="info-section">
+                    <h3>Luci</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Mixer:</th>
+                            <td id="luciMixer"></td>
+                        </tr>
+                        <tr>
+                            <th>Piazzato:</th>
+                            <td id="luciPiazzato"></td>
+                        </tr>
+                        <tr>
+                            <th>Teste Mobili:</th>
+                            <td id="luciMotorizzati"></td>
+                        </tr>
+                        <tr>
+                            <th>Proiettori Batteria:</th>
+                            <td id="luciProiettoriBatteria"></td>
+                        </tr>
+                        <tr>
+                            <th>Effetti Speciali:</th>
+                            <td id="luciSpecialFx"></td>
+                        </tr>
+                        <tr>
+                            <th>Note:</th>
+                            <td id="luciNote"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Corrente -->
+                <div class="info-section">
+                    <h3>Corrente</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Potenza Disponibile:</th>
+                            <td id="correntePotenza"></td>
+                        </tr>
+                        <tr>
+                            <th>Prese Disponibili:</th>
+                            <td id="correntePrese"></td>
+                        </tr>
+                        <tr>
+                            <th>Disposizione:</th>
+                            <td id="correnteDisposizione"></td>
+                        </tr>
+                        <tr>
+                            <th>Generatori Richiesti:</th>
+                            <td id="correnteGeneratori"></td>
+                        </tr>
+                        <tr>
+                            <th>Note:</th>
+                            <td id="correnteNote"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Personale -->
+                <div class="info-section">
+                    <h3>Personale</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Video:</th>
+                            <td id="personaleVideo"></td>
+                        </tr>
+                        <tr>
+                            <th>Audio:</th>
+                            <td id="personaleAudio"></td>
+                        </tr>
+                        <tr>
+                            <th>Luci:</th>
+                            <td id="personaleLuci"></td>
+                        </tr>
+                        <tr>
+                            <th>Facchini:</th>
+                            <td id="personaleFacchini"></td>
+                        </tr>
+                        <tr>
+                            <th>Altro:</th>
+                            <td id="personaleAltro"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Richieste -->
+                <div class="info-section">
+                    <h3>Richieste</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Permessi:</th>
+                            <td id="richiestePermessi"></td>
+                        </tr>
+                        <tr>
+                            <th>Certificazioni:</th>
+                            <td id="richiesteCertificazioni"></td>
+                        </tr>
+                        <tr>
+                            <th>Vestiario:</th>
+                            <td id="richiesteVestiario"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Allestimento -->
+                <div class="info-section">
+                    <h3>Allestimento</h3>
+                    <table class="details-table">
+                        <tr>
+                            <th>Rivestimento Palco:</th>
+                            <td id="allestimentoPalco"></td>
+                        </tr>
+                        <tr>
+                            <th>Tamponatura Perimetrale:</th>
+                            <td id="allestimentoPerimetrale"></td>
+                        </tr>
+                        <tr>
+                            <th>Totem/Quinta:</th>
+                            <td id="allestimentoTotem"></td>
+                        </tr>
+                        <tr>
+                            <th>Tamponatura LED Wall:</th>
+                            <td id="allestimentoLedwall"></td>
+                        </tr>
+                        <tr>
+                            <th>Tamponatura Regia:</th>
+                            <td id="allestimentoRegia"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Note Aggiuntive -->
+                <div class="info-section">
+                    <h3>Note Aggiuntive</h3>
+                    <div class="note-text" id="altro"></div>
+                </div>
+            </div>
+
+            <div class="actions-container">
+                <button onclick="window.modificaSopralluogo()" class="button">Modifica</button>
+                <button onclick="window.generaPDF()" class="button pdf-button">Genera PDF</button>
+                <button onclick="history.back()" class="button">Torna Indietro</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { sopralluogoService } from '../../js/services/sopralluogoService.js';
+        import { WORK_ORDER_TYPES } from '../../js/constants/workOrderTypes.js';
+        import { getReferenceValue } from '../../js/utils/referenceUtils.js';
+        import { pdfService } from '../../js/services/pdfService.js';
+
+        let sopralluogoCorrente = null;
+
+        async function loadSopralluogo() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            
+            if (!id) {
+                alert('ID sopralluogo non valido');
+                history.back();
+                return;
+            }
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const sopralluogoContainer = document.getElementById('sopralluogoContainer');
+            
+            try {
+                const result = await sopralluogoService.getSopralluogoById(id);
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                sopralluogoCorrente = result.data;
+                
+                // Display basic info
+                document.getElementById('codiceSopralluogo').textContent = sopralluogoCorrente.codice;
+                document.getElementById('eventoNome').textContent = sopralluogoCorrente.evento_nome;
+                document.getElementById('tipoLavoro').textContent = sopralluogoCorrente.tipo_lavoro;
+                document.getElementById('eventoTipologia').textContent = sopralluogoCorrente.evento_tipologia || '-';
+                document.getElementById('eventoReferente').textContent = sopralluogoCorrente.evento_referente || '-';
+                
+                // Get reference value based on tipo_lavoro
+                const refValue = getReferenceValue(sopralluogoCorrente, sopralluogoCorrente.tipo_lavoro, WORK_ORDER_TYPES);
+                document.getElementById('riferimento').textContent = refValue || '-';
+                
+                document.getElementById('date').textContent = 
+                    `Dal ${new Date(sopralluogoCorrente.data_inizio).toLocaleDateString()} al ${new Date(sopralluogoCorrente.data_fine).toLocaleDateString()}`;
+                document.getElementById('luogo').textContent = sopralluogoCorrente.luogo;
+
+                // Location info
+                document.getElementById('locationNome').textContent = sopralluogoCorrente.location_nome || '-';
+                document.getElementById('locationIndirizzo').textContent = sopralluogoCorrente.location_indirizzo || '-';
+                document.getElementById('locationReferente').textContent = sopralluogoCorrente.location_referente || '-';
+                document.getElementById('locationDimensioni').textContent = 
+                    `${sopralluogoCorrente.location_lunghezza || '-'} x ${sopralluogoCorrente.location_larghezza || '-'}`;
+                document.getElementById('locationPosizioneRegia').textContent = sopralluogoCorrente.location_posizione_regia || '-';
+                document.getElementById('locationDistanzaRegiaPalco').textContent = sopralluogoCorrente.location_distanza_regia_palco || '-';
+
+                // Accessibilità
+                document.getElementById('accessibilitaParcheggio').textContent = sopralluogoCorrente.accessibilita_parcheggio || '-';
+                document.getElementById('accessibilitaCarico').textContent = sopralluogoCorrente.accessibilita_carico_scarico || '-';
+                document.getElementById('accessibilitaAscensori').textContent = sopralluogoCorrente.accessibilita_ascensori || '-';
+
+                // Piano Lavoro
+                document.getElementById('pianoScarico').textContent = sopralluogoCorrente.dati_tecnici_scarico || '-';
+                document.getElementById('pianoMontaggio').textContent = sopralluogoCorrente.dati_tecnici_montaggio || '-';
+                document.getElementById('pianoProve').textContent = sopralluogoCorrente.dati_tecnici_prove || '-';
+                document.getElementById('pianoEvento').textContent = sopralluogoCorrente.dati_tecnici_evento || '-';
+                document.getElementById('pianoSmontaggio').textContent = sopralluogoCorrente.dati_tecnici_smontaggio || '-';
+                document.getElementById('pianoRicarico').textContent = sopralluogoCorrente.dati_tecnici_ricarico || '-';
+
+                // Palco
+                document.getElementById('palcoLunghezza').textContent = sopralluogoCorrente.palco_lunghezza || '-';
+                document.getElementById('palcoLarghezza').textContent = sopralluogoCorrente.palco_larghezza || '-';
+                document.getElementById('palcoAltezza').textContent = sopralluogoCorrente.palco_altezza || '-';
+
+                // Strutture
+                document.getElementById('strutturePedanamento').textContent = formatJsonbField(sopralluogoCorrente.strutture_pedanamento);
+                document.getElementById('struttureTruss').textContent = formatJsonbField(sopralluogoCorrente.strutture_truss);
+                document.getElementById('struttureElevatori').textContent = formatJsonbField(sopralluogoCorrente.strutture_elevatori);
+                document.getElementById('struttureMotori').textContent = formatJsonbField(sopralluogoCorrente.strutture_motori);
+                document.getElementById('struttureAncoraggiZavorre').textContent = sopralluogoCorrente.strutture_ancoraggi_zavorre || '-';
+
+                // Video
+                document.getElementById('videoLedwall').textContent = formatJsonbField(sopralluogoCorrente.video_ledwall);
+                document.getElementById('videoProiezione').textContent = formatJsonbField(sopralluogoCorrente.video_proiezione);
+                document.getElementById('videoMonitor').textContent = formatJsonbField(sopralluogoCorrente.video_monitor);
+                document.getElementById('videoRiprese').textContent = formatJsonbField(sopralluogoCorrente.video_riprese);
+                document.getElementById('videoPcContributi').textContent = sopralluogoCorrente.video_pc_contributi || '0';
+                document.getElementById('videoPcSlide').textContent = sopralluogoCorrente.video_pc_slide || '0';
+                document.getElementById('videoNote').textContent = sopralluogoCorrente.video_note || '-';
+
+                // Audio
+                document.getElementById('audioRegia').textContent = formatJsonbField(sopralluogoCorrente.audio_regia);
+                document.getElementById('audioPa').textContent = formatJsonbField(sopralluogoCorrente.audio_pa);
+                document.getElementById('audioMonitor').textContent = formatJsonbField(sopralluogoCorrente.audio_monitor);
+                document.getElementById('audioRadiomicrofoni').textContent = formatJsonbField(sopralluogoCorrente.audio_radiomicrofoni);
+                document.getElementById('audioMicPodio').textContent = sopralluogoCorrente.audio_mic_podio || '0';
+                document.getElementById('audioMicTavolo').textContent = sopralluogoCorrente.audio_mic_tavolo || '0';
+                document.getElementById('audioNote').textContent = sopralluogoCorrente.audio_note || '-';
+
+                // Luci
+                document.getElementById('luciMixer').textContent = sopralluogoCorrente.luci_mixer || '-';
+                document.getElementById('luciPiazzato').textContent = formatJsonbField(sopralluogoCorrente.luci_piazzato);
+                document.getElementById('luciMotorizzati').textContent = formatJsonbField(sopralluogoCorrente.luci_motorizzati);
+                document.getElementById('luciProiettoriBatteria').textContent = formatJsonbField(sopralluogoCorrente.luci_proiettori_batteria);
+                document.getElementById('luciSpecialFx').textContent = formatJsonbField(sopralluogoCorrente.luci_special_fx);
+                document.getElementById('luciNote').textContent = sopralluogoCorrente.luci_note || '-';
+
+                // Corrente
+                document.getElementById('correntePotenza').textContent = sopralluogoCorrente.corrente_potenza || '-';
+                document.getElementById('correntePrese').textContent = sopralluogoCorrente.corrente_prese || '-';
+                document.getElementById('correnteDisposizione').textContent = sopralluogoCorrente.corrente_disposizione || '-';
+                document.getElementById('correnteGeneratori').textContent = formatJsonbField(sopralluogoCorrente.corrente_generatori_richiesti);
+                document.getElementById('correnteNote').textContent = sopralluogoCorrente.corrente_note || '-';
+
+                // Personale
+                document.getElementById('personaleVideo').textContent = formatJsonbField(sopralluogoCorrente.personale_video);
+                document.getElementById('personaleAudio').textContent = formatJsonbField(sopralluogoCorrente.personale_audio);
+                document.getElementById('personaleLuci').textContent = formatJsonbField(sopralluogoCorrente.personale_luci);
+                document.getElementById('personaleFacchini').textContent = formatJsonbField(sopralluogoCorrente.personale_facchini);
+                document.getElementById('personaleAltro').textContent = formatJsonbField(sopralluogoCorrente.personale_altro);
+
+                // Richieste
+                document.getElementById('richiestePermessi').textContent = sopralluogoCorrente.richieste_permessi || '-';
+                document.getElementById('richiesteCertificazioni').textContent = sopralluogoCorrente.richieste_certificazioni || '-';
+                document.getElementById('richiesteVestiario').textContent = sopralluogoCorrente.richieste_vestiario || '-';
+
+                // Allestimento
+                document.getElementById('allestimentoPalco').textContent = formatJsonbField(sopralluogoCorrente.allestimento_rivestimento_palco);
+                document.getElementById('allestimentoPerimetrale').textContent = formatJsonbField(sopralluogoCorrente.allestimento_tamponatura_perimetrale);
+                document.getElementById('allestimentoTotem').textContent = formatJsonbField(sopralluogoCorrente.allestimento_totem_quinta);
+                document.getElementById('allestimentoLedwall').textContent = formatJsonbField(sopralluogoCorrente.allestimento_tamponatura_ledwall);
+                document.getElementById('allestimentoRegia').textContent = formatJsonbField(sopralluogoCorrente.allestimento_tamponatura_regia);
+
+                // Note Aggiuntive
+                document.getElementById('altro').textContent = sopralluogoCorrente.altro || 'Nessuna nota aggiuntiva';
+
+                // Set status with appropriate class
+                const statoElement = document.getElementById('statoSopralluogo');
+                statoElement.textContent = sopralluogoCorrente.stato;
+                statoElement.className = `status-badge status-${sopralluogoCorrente.stato.toLowerCase()}`;
+
+                loadingIndicator.style.display = 'none';
+                sopralluogoContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                alert('Errore durante il caricamento del sopralluogo: ' + error.message);
+                history.back();
+            }
+        }
+
+        function formatJsonbField(field) {
+            if (!field) return '-';
+            try {
+                if (typeof field === 'string') {
+                    field = JSON.parse(field);
+                }
+                return Object.entries(field)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ');
+            } catch (error) {
+                return String(field);
+            }
+        }
+
+        // Navigation functions
+        window.modificaSopralluogo = () => {
+            if (sopralluogoCorrente) {
+                window.location.href = `modifica.html?id=${sopralluogoCorrente.id}`;
+            }
+        };
+
+        window.generaPDF = async () => {
+            if (!sopralluogoCorrente) return;
+            try {
+                await pdfService.generateSopralluogoReport(sopralluogoCorrente);
+            } catch (error) {
+                alert('Errore durante la generazione del PDF: ' + error.message);
+            }
+        };
+
+        // Load sopralluogo on page load
+        document.addEventListener('DOMContentLoaded', loadSopralluogo);
+    </script>
+
+    <style>
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .sopralluogo-details {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-section {
+            margin-bottom: 2rem;
+        }
+
+        .info-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-section h3 {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .info-section h4 {
+            color: var(--text-color);
+            margin: 1.5rem 0 1rem;
+            font-size: 1.1rem;
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .details-table th,
+        .details-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .details-table th {
+            width: 200px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .note-text {
+            padding: 1rem;
+            background: var(--background-color);
+            border-radius: 0.375rem;
+            margin: 0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .actions-container {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-start;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+
+        .status-bozza { background: #fef3c7; color: #92400e; }
+        .status-completato { background: #d1fae5; color: #065f46; }
+        .status-annullato { background: #fee2e2; color: #991b1b; }
+
+        .pdf-button {
+            background-color: #8b5cf6 !important;
+            color: white !important;
+        }
+        
+        .pdf-button:hover {
+            background-color: # 7c3aed !important;
+        }
+    </style>
+</body>
+</html>

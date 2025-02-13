@@ -48,14 +48,13 @@
 
         // Mostra automaticamente il form di produzione
         document.addEventListener('DOMContentLoaded', () => {
-            createProduzioneModal();
-            const modal = document.getElementById('produzioneModal');
+            const modal = createProduzioneModal();
             const form = document.getElementById('produzioneForm');
             
             // Sposta il form nel container
             const container = document.getElementById('produzioneFormContainer');
-            container.appendChild(modal.querySelector('.modal-content'));
-            modal.remove();
+            container.appendChild(modal.modal.querySelector('.modal-content'));
+            modal.hide();
 
             // Gestisci il submit del form
             form.onsubmit = async (e) => {

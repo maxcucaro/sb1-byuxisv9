@@ -39,7 +39,7 @@
 
         <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
         
-        <div class="table-container" style="display: none;" id="tableContainer">
+        <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -66,16 +66,13 @@
     <script type="module">
         import { imballiService } from '../../js/services/imballiService.js';
         import { createImballoModal } from '../../js/modal/imballoModal.js';
-        import { supabase } from '../../js/utils/supabaseClient.js';
 
         async function loadImballi() {
             const loadingIndicator = document.getElementById('loadingIndicator');
-            const tableContainer = document.getElementById('tableContainer');
             const tableBody = document.getElementById('imballiTable');
             
             try {
                 const result = await imballiService.getImballi();
-                
                 if (!result.success) {
                     throw new Error(result.error);
                 }
@@ -105,6 +102,9 @@
                                 <button onclick="window.toggleStatoImballo('${imballo.id}', ${imballo.attivo})" class="button">
                                     ${imballo.attivo ? 'Disattiva' : 'Attiva'}
                                 </button>
+                                <button onclick="window.eliminaImballo('${imballo.id}')" class="button delete-button">
+                                    Elimina
+                                </button>
                             </td>
                         </tr>
                     `).join('');
@@ -119,25 +119,16 @@
                     </tr>`;
             } finally {
                 loadingIndicator.style.display = 'none';
-                tableContainer.style.display = 'block';
             }
         }
 
-        // Inizializza il modal
-        createImballoModal();
-
-        // Funzioni globali per la gestione degli imballi
         window.aggiungiImballo = () => {
-            const modal = document.getElementById('imballoModal');
-            const form = document.getElementById('imballoForm');
-            
-            // Reset form
-            form.reset();
+            const modal = createImballoModal();
+            const form = modal.querySelector('#imballoForm');
             
             form.onsubmit = async (e) => {
                 e.preventDefault();
                 const formData = {
-                    codice: form.codice.value,
                     descrizione: form.descrizione.value,
                     dimensioni: form.dimensioni.value,
                     peso: form.peso.value ? parseFloat(form.peso.value) : null,
@@ -152,7 +143,7 @@
                         modal.style.display = 'none';
                         await loadImballi();
                     } else {
-                        alert('Errore durante il salvataggio: ' + result.error);
+                        throw new Error(result.error);
                     }
                 } catch (error) {
                     alert('Errore durante il salvataggio: ' + error.message);
@@ -163,52 +154,49 @@
         };
 
         window.modificaImballo = async (id) => {
-            const modal = document.getElementById('imballoModal');
-            const form = document.getElementById('imballoForm');
+            const modal = createImballoModal();
+            const form = modal.querySelector('#imballoForm');
             
             try {
-                const { data } = await supabase
-                    .from('imballi')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
+                const result = await imballiService.getImballi();
+                if (!result.success) throw new Error(result.error);
+
+                const imballo = result.data.find(i => i.id === id);
+                if (!imballo) throw new Error('Imballo non trovato');
+
+                // Popola il form
+                form.descrizione.value = imballo.descrizione;
+                form.dimensioni.value = imballo.dimensioni || '';
+                form.peso.value = imballo.peso || '';
+                form.capacita.value = imballo.capacita || '';
+                form.note.value = imballo.note || '';
+                form.attivo.checked = imballo.attivo;
                 
-                if (data) {
-                    form.codice.value = data.codice;
-                    form.descrizione.value = data.descrizione;
-                    form.dimensioni.value = data.dimensioni || '';
-                    form.peso.value = data.peso || '';
-                    form.capacita.value = data.capacita || '';
-                    form.note.value = data.note || '';
-                    form.attivo.checked = data.attivo;
-                    
-                    form.onsubmit = async (e) => {
-                        e.preventDefault();
-                        const formData = {
-                            codice: form.codice.value,
-                            descrizione: form.descrizione.value,
-                            dimensioni: form.dimensioni.value,
-                            peso: form.peso.value ? parseFloat(form.peso.value) : null,
-                            capacita: form.capacita.value,
-                            note: form.note.value,
-                            attivo: form.attivo.checked
-                        };
-                        
-                        try {
-                            const result = await imballiService.updateImballo(id, formData);
-                            if (result.success) {
-                                modal.style.display = 'none';
-                                await loadImballi();
-                            } else {
-                                alert('Errore durante l\'aggiornamento: ' + result.error);
-                            }
-                        } catch (error) {
-                            alert('Errore durante l\'aggiornamento: ' + error.message);
-                        }
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = {
+                        descrizione: form.descrizione.value,
+                        dimensioni: form.dimensioni.value,
+                        peso: form.peso.value ? parseFloat(form.peso.value) : null,
+                        capacita: form.capacita.value,
+                        note: form.note.value,
+                        attivo: form.attivo.checked
                     };
                     
-                    modal.style.display = 'block';
-                }
+                    try {
+                        const result = await imballiService.updateImballo(id, formData);
+                        if (result.success) {
+                            modal.style.display = 'none';
+                            await loadImballi();
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        alert('Errore durante l\'aggiornamento: ' + error.message);
+                    }
+                };
+                
+                modal.style.display = 'block';
             } catch (error) {
                 alert('Errore durante il caricamento dell\'imballo: ' + error.message);
             }
@@ -221,7 +209,7 @@
                     if (result.success) {
                         await loadImballi();
                     } else {
-                        alert('Errore durante la modifica dello stato: ' + result.error);
+                        throw new Error(result.error);
                     }
                 } catch (error) {
                     alert('Errore durante la modifica dello stato: ' + error.message);
@@ -229,13 +217,48 @@
             }
         };
 
-        // Chiusura del modal
-        document.querySelector('.close-modal').onclick = () => {
-            document.getElementById('imballoModal').style.display = 'none';
+        window.eliminaImballo = async (id) => {
+            if (confirm('Sei sicuro di voler eliminare questo imballo? Questa azione non può essere annullata.')) {
+                try {
+                    const result = await imballiService.deleteImballo(id);
+                    if (result.success) {
+                        await loadImballi();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'eliminazione: ' + error.message);
+                }
+            }
         };
 
         // Carica gli imballi all'avvio
         document.addEventListener('DOMContentLoaded', loadImballi);
     </script>
+
+    <style>
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .status-active { color: #10b981; }
+        .status-inactive { color: #ef4444; }
+        
+        .delete-button {
+            background-color: #ef4444 !important;
+            color: white !important;
+        }
+        
+        .delete-button:hover {
+            background-color: #dc2626 !important;
+        }
+
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+        }
+    </style>
 </body>
 </html>

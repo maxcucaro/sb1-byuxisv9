@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Profilo Aziendale</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="pages/workspace/schede/liste-aperte.html">Workspace</a></li>
+                <li><a href="impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="profile-container">
+            <h2>Profilo Aziendale</h2>
+            
+            <div class="profile-section">
+                <div class="logo-section">
+                    <h3>Logo Aziendale</h3>
+                    <div class="logo-preview" id="logoPreview">
+                        <img id="currentLogo" src="" alt="Logo aziendale" style="display: none;">
+                        <div class="no-logo" id="noLogo">Nessun logo caricato</div>
+                    </div>
+                    <div class="logo-actions">
+                        <input type="file" id="logoInput" accept="image/*" style="display: none;">
+                        <button type="button" class="button" onclick="document.getElementById('logoInput').click()">
+                            Carica Logo
+                        </button>
+                        <button type="button" class="button remove-button" id="removeLogo" style="display: none;">
+                            Rimuovi Logo
+                        </button>
+                    </div>
+                    <p class="logo-help">
+                        Formato consigliato: PNG o JPG, dimensione massima 2MB.<br>
+                        Dimensioni consigliate: 300x100 pixel.
+                    </p>
+                </div>
+
+                <form id="profileForm" class="profile-form">
+                    <div class="form-group">
+                        <label for="ragioneSociale" class="required-field">Ragione Sociale</label>
+                        <input type="text" id="ragioneSociale" name="ragioneSociale" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="piva" class="required-field">Partita IVA</label>
+                        <input type="text" id="piva" name="piva" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="indirizzo">Indirizzo</label>
+                        <input type="text" id="indirizzo" name="indirizzo">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cap">CAP</label>
+                            <input type="text" id="cap" name="cap">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="citta">Città</label>
+                            <input type="text" id="citta" name="citta">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="provincia">Provincia</label>
+                            <input type="text" id="provincia" name="provincia">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefono" class="required-field">Telefono</label>
+                        <input type="tel" id="telefono" name="telefono" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="required-field">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sito">Sito Web</label>
+                        <input type="url" id="sito" name="sito">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="button">Salva Modifiche</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .profile-section {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo-preview {
+            width: 300px;
+            height: 100px;
+            border: 2px dashed var(--border-color);
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .no-logo {
+            color: #6B7280;
+            font-style: italic;
+        }
+
+        .logo-actions {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .logo-help {
+            font-size: 0.875rem;
+            color: #6B7280;
+            margin-top: 0.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .remove-button {
+            background-color: #ef4444 !important;
+            color: white !important;
+        }
+
+        .remove-button:hover {
+            background-color: #dc2626 !important;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <script type="module">
+        import { companyProfileService } from './js/services/companyProfileService.js';
+
+        let currentLogoUrl = null;
+
+        async function loadProfile() {
+            try {
+                const result = await companyProfileService.getProfile();
+                if (!result.success) throw new Error(result.error);
+
+                const profile = result.data;
+                
+                // Popola il form
+                document.getElementById('ragioneSociale').value = profile.ragione_sociale;
+                document.getElementById('piva').value = profile.piva;
+                document.getElementById('indirizzo').value = profile.indirizzo || '';
+                document.getElementById('cap').value = profile.cap || '';
+                document.getElementById('citta').value = profile.citta || '';
+                document.getElementById('provincia').value = profile.provincia || '';
+                document.getElementById('telefono').value = profile.telefono || '';
+                document.getElementById('email').value = profile.email || '';
+                document.getElementById('sito').value = profile.sito || '';
+
+                // Gestione logo
+                if (profile.logo_url) {
+                    currentLogoUrl = profile.logo_url;
+                    const logoImg = document.getElementById('currentLogo');
+                    logoImg.src = profile.logo_url;
+                    logoImg.style.display = 'block';
+                    document.getElementById('noLogo').style.display = 'none';
+                    document.getElementById('removeLogo').style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Errore durante il caricamento del profilo:', error);
+                alert('Errore durante il caricamento del profilo: ' + error.message);
+            }
+        }
+
+        // Gestione upload logo
+        document.getElementById('logoInput').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const result = await companyProfileService.uploadLogo(file);
+                if (!result.success) throw new Error(result.error);
+
+                // Aggiorna l'interfaccia
+                currentLogoUrl = result.data.publicUrl;
+                const logoImg = document.getElementById('currentLogo');
+                logoImg.src = currentLogoUrl;
+                logoImg.style.display = 'block';
+                document.getElementById('noLogo').style.display = 'none';
+                document.getElementById('removeLogo').style.display = 'block';
+
+            } catch (error) {
+                console.error('Errore durante l\'upload del logo:', error);
+                alert('Errore durante l\'upload del logo: ' + error.message);
+            }
+        };
+
+        // Gestione rimozione logo
+        document.getElementById('removeLogo').onclick = async () => {
+            try {
+                const result = await companyProfileService.removeLogo();
+                if (!result.success) throw new Error(result.error);
+
+                // Aggiorna l'interfaccia
+                currentLogoUrl = null;
+                document.getElementById('currentLogo').style.display = 'none';
+                document.getElementById('noLogo').style.display = 'block';
+                document.getElementById('removeLogo').style.display = 'none';
+
+            } catch (error) {
+                console.error('Errore durante la rimozione del logo:', error);
+                alert('Errore durante la rimozione del logo: ' + error.message);
+            }
+        };
+
+        // Gestione salvataggio profilo
+        document.getElementById('profileForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+
+            try {
+                const formData = Object.fromEntries(new FormData(e.target));
+                const result = await companyProfileService.updateProfile(formData);
+                
+                if (!result.success) throw new Error(result.error);
+                alert('Profilo aggiornato con successo!');
+
+            } catch (error) {
+                console.error('Errore durante il salvataggio del profilo:', error);
+                alert('Errore durante il salvataggio del profilo: ' + error.message);
+            } finally {
+                submitButton.disabled = false;
+            }
+        };
+
+        // Carica il profilo all'avvio
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

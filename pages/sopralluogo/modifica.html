@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EVENT TRACK - Nuova Scheda Lavoro</title>
+    <title>EVENT TRACK - Modifica Sopralluogo</title>
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="../../css/form.css">
-    <link rel="stylesheet" href="../../css/materiali.css">
 </head>
 <body>
     <header class="header">
@@ -20,99 +19,25 @@
         <div class="nav-container">
             <ul>
                 <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../sopralluogo.html">Sopralluogo</a></li>
                 <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
                 <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../pages/workspace/schede/liste-aperte.html">Workspace</a></li>
                 <li><a href="../../impostazioni.html">Impostazioni</a></li>
             </ul>
         </div>
     </nav>
 
     <main class="main-content">
-        <h2>Nuova Scheda Lavoro</h2>
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
         
-        <div class="form-container">
-            <form id="schedaLavoroForm">
-                <div class="form-group">
-                    <label for="nome" class="required-field">Nome Scheda</label>
-                    <input type="text" id="nome" name="nome" required>
-                </div>
+        <div id="formContainer" style="display: none;">
+            <div class="header-actions">
+                <h2>Modifica Sopralluogo <span id="codiceSopralluogo"></span></h2>
+                <div class="status-badge" id="statoSopralluogo"></div>
+            </div>
 
-                <div class="form-group">
-                    <label for="tipo_lavoro" class="required-field">Tipo Lavoro</label>
-                    <div class="tipo-lavoro-container">
-                        <select id="tipo_lavoro" name="tipo_lavoro" required>
-                            <option value="">Seleziona tipo</option>
-                        </select>
-                        <div id="shortcutButtons" class="shortcut-buttons"></div>
-                    </div>
-                </div>
-
-                <div class="form-group" data-field="produzione_id" style="display: none;">
-                    <label for="produzione_id" class="required-field">Produzione</label>
-                    <select id="produzione_id" name="produzione_id">
-                        <option value="">Seleziona produzione</option>
-                    </select>
-                </div>
-
-                <div class="form-group" data-field="cliente_id" style="display: none;">
-                    <label for="cliente_id" class="required-field">Cliente</label>
-                    <select id="cliente_id" name="cliente_id">
-                        <option value="">Seleziona cliente</option>
-                    </select>
-                </div>
-
-                <div class="form-group" data-field="cat_id" style="display: none;">
-                    <label for="cat_id" class="required-field">CAT</label>
-                    <select id="cat_id" name="cat_id">
-                        <option value="">Seleziona CAT</option>
-                    </select>
-                </div>
-
-                <div class="form-group" data-field="fornitore_id" style="display: none;">
-                    <label for="fornitore_id" class="required-field">Fornitore</label>
-                    <select id="fornitore_id" name="fornitore_id">
-                        <option value="">Seleziona fornitore</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="data_inizio" class="required-field">Data Inizio</label>
-                    <input type="date" id="data_inizio" name="data_inizio" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="data_fine" class="required-field">Data Fine</label>
-                    <input type="date" id="data_fine" name="data_fine" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="luogo" class="required-field">Luogo</label>
-                    <input type="text" id="luogo" name="luogo" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="responsabile_id">Responsabile</label>
-                    <select id="responsabile_id" name="responsabile_id">
-                        <option value="">Seleziona responsabile</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="note">Note</label>
-                    <textarea id="note" name="note" rows="4"></textarea>
-                </div>
-
-                <!-- Materiali Section -->
-                <div class="info-section">
-                    <h3>Materiali Richiesti</h3>
-                    <div id="materialiContainer"></div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="button">Salva</button>
-                    <button type="button" onclick="history.back()" class="button">Annulla</button>
-                </div>
-            </form>
+            <!-- Il form verrà inserito qui -->
         </div>
     </main>
 
@@ -121,17 +46,100 @@
     </footer>
 
     <script type="module">
+        import { sopralluogoService } from '../../js/services/sopralluogoService.js';
         import { tipologieLavoroService } from '../../js/services/tipologieLavoroService.js';
-        import { FormManager } from '../../js/modules/schedaLavoro/formManager.js';
-        import { createShortcutButtons } from '../../js/components/schedaLavoro/ShortcutButtons.js';
-        import { displayMaterialiSelection } from '../../js/components/materiali/MaterialiSelection.js';
-        import { handleFormSubmit } from '../../js/modules/schedaLavoro/formSubmit.js';
         import { anagraficheService } from '../../js/services/anagraficheService.js';
+        import { createShortcutButtons } from '../../js/components/schedaLavoro/ShortcutButtons.js';
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        let sopralluogoCorrente = null;
+
+        async function loadSopralluogo() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            
+            if (!id) {
+                alert('ID sopralluogo non valido');
+                history.back();
+                return;
+            }
+
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const formContainer = document.getElementById('formContainer');
+            
             try {
-                // Carica i tipi di lavoro
-                const tipoSelect = document.getElementById('tipo_lavoro');
+                const result = await sopralluogoService.getSopralluogoById(id);
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                sopralluogoCorrente = result.data;
+
+                // Display header info
+                document.getElementById('codiceSopralluogo').textContent = sopralluogoCorrente.codice;
+                const statoElement = document.getElementById('statoSopralluogo');
+                statoElement.textContent = sopralluogoCorrente.stato;
+                statoElement.className = `status-badge status-${sopralluogoCorrente.stato.toLowerCase()}`;
+
+                // Load form
+                await initForm();
+                
+                // Populate form with data
+                populateForm(sopralluogoCorrente);
+
+                loadingIndicator.style.display = 'none';
+                formContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                alert('Errore durante il caricamento del sopralluogo: ' + error.message);
+                history.back();
+            }
+        }
+
+        async function initForm() {
+            // Clone the form from nuovo.html
+            const response = await fetch('nuovo.html');
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const form = doc.getElementById('sopralluogoForm');
+            
+            if (!form) {
+                throw new Error('Form template non trovato');
+            }
+
+            // Insert form into container
+            const formContainer = document.getElementById('formContainer');
+            formContainer.appendChild(form);
+
+            // Setup form handlers
+            setupFormHandlers(form);
+        }
+
+        function populateForm(data) {
+            const form = document.getElementById('sopralluogoForm');
+            if (!form) return;
+
+            // Populate all form fields
+            Object.entries(data).forEach(([key, value]) => {
+                const element = form.elements[key];
+                if (element) {
+                    if (element.type === 'checkbox') {
+                        element.checked = value;
+                    } else if (element.type === 'select-one') {
+                        element.value = value;
+                        // Trigger change event for select fields
+                        element.dispatchEvent(new Event('change'));
+                    } else {
+                        element.value = value || '';
+                    }
+                }
+            });
+        }
+
+        async function setupFormHandlers(form) {
+            try {
+                // Load tipi lavoro
+                const tipoSelect = form.tipo_lavoro;
                 const result = await tipologieLavoroService.getTipologieAttive();
                 if (!result.success) throw new Error(result.error);
 
@@ -160,11 +168,6 @@
                     tipoSelect.appendChild(option);
                 });
 
-                // Initialize form manager
-                const form = document.getElementById('schedaLavoroForm');
-                const formManager = new FormManager(form);
-                await formManager.init();
-
                 // Setup tipo lavoro change handler
                 const produzioneField = form.querySelector('[data-field="produzione_id"]');
                 const clienteField = form.querySelector('[data-field="cliente_id"]');
@@ -172,7 +175,7 @@
                 const fornitoreField = form.querySelector('[data-field="fornitore_id"]');
 
                 tipoSelect.addEventListener('change', async (e) => {
-                    // Nascondi tutti i campi
+                    // Hide all fields
                     [produzioneField, clienteField, catField, fornitoreField].forEach(field => {
                         if (field) {
                             field.style.display = 'none';
@@ -181,13 +184,14 @@
                         }
                     });
 
-                    // Mostra il campo appropriato in base al tipo
+                    // Show shortcut buttons
                     const tipo = e.target.value;
                     const shortcutContainer = document.getElementById('shortcutButtons');
                     if (shortcutContainer) {
                         shortcutContainer.innerHTML = createShortcutButtons(tipo);
                     }
 
+                    // Show appropriate field based on tipo
                     switch (tipo) {
                         case 'INTERNO':
                             if (produzioneField) {
@@ -233,25 +237,35 @@
                     }
                 });
 
-                // Initialize materiali selection
-                const materialiContainer = document.getElementById('materialiContainer');
-                const materialiSelection = await displayMaterialiSelection(materialiContainer);
-
                 // Handle form submission
                 form.onsubmit = async (e) => {
                     e.preventDefault();
-                    const formData = new FormData(form);
-                    const materiali = materialiSelection.getSelectedItems();
-                    await handleFormSubmit(form, Object.fromEntries(formData), materiali);
+                    
+                    try {
+                        const formData = new FormData(e.target);
+                        const result = await sopralluogoService.updateSopralluogo(
+                            sopralluogoCorrente.id,
+                            Object.fromEntries(formData)
+                        );
+
+                        if (result.success) {
+                            alert('Sopralluogo aggiornato con successo!');
+                            window.location.href = `visualizza.html?id=${sopralluogoCorrente.id}`;
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        alert('Errore durante il salvataggio: ' + error.message);
+                    }
                 };
 
             } catch (error) {
                 console.error('Errore durante l\'inizializzazione:', error);
                 alert('Errore durante l\'inizializzazione del form: ' + error.message);
             }
-        });
+        }
 
-        // Funzioni per caricare i dati di riferimento
+        // Helper functions to load reference data
         async function loadProduzioni(select) {
             try {
                 const result = await anagraficheService.getProduzioni();
@@ -327,9 +341,31 @@
                 console.error('Errore caricamento fornitori:', error);
             }
         }
+
+        // Load sopralluogo on page load
+        document.addEventListener('DOMContentLoaded', loadSopralluogo);
     </script>
 
     <style>
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+
+        .status-bozza { background: #fef3c7; color: #92400e; }
+        .status-completato { background: #d1fae5; color: #065f46; }
+        .status-annullato { background: #fee2e2; color: #991b1b; }
+
         .form-section {
             margin-bottom: 2rem;
             padding: 2rem;
@@ -386,18 +422,6 @@
 
         .shortcut-buttons .button {
             white-space: nowrap;
-        }
-
-        .info-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .info-section h3 {
-            margin-bottom: 1rem;
-            color: var(--text-color);
-            font-size: 1.25rem;
         }
     </style>
 </body>

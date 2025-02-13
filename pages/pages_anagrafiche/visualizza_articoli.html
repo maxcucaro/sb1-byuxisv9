@@ -6,9 +6,127 @@
     <title>EVENT TRACK - Visualizza Articoli</title>
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/search.css">
     <link rel="stylesheet" href="../../css/modal.css">
+    <style>
+        /* Stile per la barra di caricamento */
+        .progress-bar-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999;
+        }
+
+        .progress-bar {
+            height: 4px;
+            width: 0;
+            background-color: #4caf50;
+            transition: width 0.4s ease;
+        }
+
+        /* Stile per i pulsanti */
+        .button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            width: 120px; /* Imposta una larghezza fissa per tutti i pulsanti */
+            height: 40px; /* Imposta un'altezza fissa per tutti i pulsanti */
+            line-height: 1.5; /* Allinea il testo verticalmente */
+            transition: background-color 0.3s ease;
+            margin: 0.25rem; /* Margine tra i pulsanti */
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .button-green {
+            background-color: #10b981 !important;
+        }
+
+        .button-green:hover {
+            background-color: #059669 !important;
+        }
+
+        .button-red {
+            background-color: #ef4444 !important;
+        }
+
+        .button-red:hover {
+            background-color: #dc2626 !important;
+        }
+
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .status-active { color: #10b981; }
+        .status-inactive { color: #ef4444; }
+        
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        .category-separator {
+            border-top: 20px solid var(--background-color);
+        }
+
+        .category-header {
+            background: var(--accent-color);
+            color: white;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .category-header-first td {
+            background: var(--accent-color);
+            color: white;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .button-container {
+            text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .button-pair {
+            display: flex;
+            justify-content: space-between;
+            width: 260px; /* Due pulsanti di 120px + margine */
+            margin: 0.5rem;
+        }
+    </style>
 </head>
 <body>
+    <div class="progress-bar-container" id="progressBarContainer">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
     <header class="header">
         <div class="header-content">
             <h1>EVENT TRACK</h1>
@@ -19,9 +137,10 @@
     <nav class="nav">
         <div class="nav-container">
             <ul>
-                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../home.html">Home</a></li>
                 <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
                 <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../pages/workspace/schede/liste-aperte.html">Workspace</a></li>
                 <li><a href="../../impostazioni.html">Impostazioni</a></li>
             </ul>
         </div>
@@ -29,11 +148,27 @@
 
     <main class="main-content">
         <h2 id="titoloLista">Visualizza Articoli</h2>
-        <p id="descrizioneSettore" class="section-description">Elenco completo degli articoli nel catalogo</p>
+        <p id="descrizioneSettore" class="section-description">Elenco completo degli articoli</p>
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Cerca per codice, descrizione, categoria..."
+                class="search-input"
+            >
+            <select id="searchFilter" class="search-filter">
+                <option value="all">Tutti i campi</option>
+                <option value="cod">Codice</option>
+                <option value="descrizione">Descrizione</option>
+                <option value="categoria">Categoria</option>
+                <option value="ubicazione">Ubicazione</option>
+            </select>
+        </div>
 
-        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        <div id="loadingIndicator" class="loading-indicator"></div>
         
-        <div class="table-container" style="display: none;" id="tableContainer">
+        <div class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -51,9 +186,12 @@
                 </tbody>
             </table>
         </div>
-            
+
         <div class="button-container" style="margin-top: 2rem;">
-            <button onclick="history.back()" class="button">TORNA INDIETRO</button>
+            <div class="button-pair">
+                <button onclick="history.back()" class="button">Indietro</button>
+                <button onclick="loadArticoli()" class="button">Ricarica</button>
+            </div>
         </div>
     </main>
 
@@ -63,43 +201,91 @@
 
     <script type="module">
         import { articoliService } from '../../js/services/articoliService.js';
+        import { settoriService } from '../../js/services/settoriService.js';
+        import { createArticoloModal } from '../../js/modal/articoloModal.js';
         import { SETTORI } from '../../js/utils/constants.js';
-        import { createQuantityModal } from '../../js/modal/quantityModal.js';
-        
+        import { kitService } from '../../js/services/kitService.js';
+
+        let currentArticoli = [];
         let currentSettore = '';
+        let kitArticoli = new Map();
+        let kitComponenti = new Map();
 
-        async function loadArticoli() {
-            const params = new URLSearchParams(window.location.search);
-            const settore = params.get('settore')?.toUpperCase();
-            currentSettore = settore;
-            
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            const tableContainer = document.getElementById('tableContainer');
-            const tableBody = document.getElementById('articoliTable');
-            
+        async function loadKitInfo() {
             try {
-                if (settore && SETTORI[settore]) {
-                    const settoreInfo = SETTORI[settore];
-                    document.title = `EVENT TRACK - Visualizza Articoli ${settoreInfo.nome}`;
-                    document.getElementById('titoloLista').textContent = `Visualizza Articoli ${settoreInfo.nome}`;
-                    document.getElementById('descrizioneSettore').textContent = 
-                        `Elenco completo degli articoli ${settoreInfo.nome.toLowerCase()}`;
-                }
+                const result = await kitService.getAllKit();
+                if (result.success) {
+                    kitArticoli = new Map(
+                        result.data.map(kit => [`${kit.settore}-${kit.articolo_cod}`, kit])
+                    );
 
-                const result = await articoliService.getArticoli(settore);
-                if (!result.success) {
-                    throw new Error(result.error);
+                    kitComponenti = new Map();
+                    result.data.forEach(kit => {
+                        kit.kit_componenti?.forEach(comp => {
+                            const key = `${comp.componente_settore}-${comp.componente_cod}`;
+                            if (!kitComponenti.has(key)) {
+                                kitComponenti.set(key, []);
+                            }
+                            kitComponenti.get(key).push({
+                                kit_nome: kit.nome,
+                                kit_settore: kit.settore,
+                                kit_cod: kit.articolo_cod,
+                                quantita: comp.quantita
+                            });
+                        });
+                    });
                 }
+            } catch (error) {
+                console.error('Errore caricamento kit:', error);
+            }
+        }
 
-                if (!result.data || result.data.length === 0) {
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="7" class="no-data">
-                                Nessun articolo trovato
-                            </td>
-                        </tr>`;
-                } else {
-                    tableBody.innerHTML = result.data.map(articolo => `
+        function filterArticoli(searchText, searchField) {
+            if (!searchText) return currentArticoli;
+            
+            const searchLower = searchText.toLowerCase();
+            return currentArticoli.filter(articolo => {
+                if (searchField === 'all') {
+                    return (
+                        articolo.cod?.toLowerCase().includes(searchLower) ||
+                        articolo.descrizione?.toLowerCase().includes(searchLower) ||
+                        articolo.categoria?.toLowerCase().includes(searchLower) ||
+                        articolo.ubicazione?.toLowerCase().includes(searchLower)
+                    );
+                }
+                return articolo[searchField]?.toString().toLowerCase().includes(searchLower);
+            });
+        }
+
+        function updateDisplay(filteredData) {
+            const tableBody = document.getElementById('articoliTable');
+            let html = '';
+
+            const articoliByCategoria = {};
+            filteredData.forEach(articolo => {
+                if (!articoliByCategoria[articolo.categoria]) {
+                    articoliByCategoria[articolo.categoria] = [];
+                }
+                articoliByCategoria[articolo.categoria].push(articolo);
+            });
+
+            const categorieOrdinate = Object.keys(articoliByCategoria).sort();
+
+            categorieOrdinate.forEach(categoria => {
+                const articoli = articoliByCategoria[categoria].sort((a, b) => 
+                    a.descrizione.localeCompare(b.descrizione)
+                );
+
+                html += `
+                    <tr class="category-separator">
+                        <td colspan="7" class="category-header">${categoria}</td>
+                    </tr>`;
+
+                articoli.forEach(articolo => {
+                    const hasKit = kitArticoli.has(`${currentSettore}-${articolo.cod}`);
+                    const isComponente = kitComponenti.has(`${currentSettore}-${articolo.cod}`);
+
+                    html += `
                         <tr>
                             <td>${articolo.cod || '-'}</td>
                             <td>${articolo.descrizione || '-'}</td>
@@ -109,17 +295,79 @@
                             <td class="${articolo.attivo ? 'status-active' : 'status-inactive'}">
                                 ${articolo.attivo ? 'Attivo' : 'Inattivo'}
                             </td>
-                            <td>
-                                <button onclick="window.modificaQuantita('${articolo.cod}')" class="button">
-                                    Modifica Quantità
-                                </button>
-                                <button onclick="window.toggleStato('${articolo.cod}', ${articolo.attivo})" class="button">
-                                    ${articolo.attivo ? 'Disattiva' : 'Attiva'}
-                                </button>
+                            <td class="button-container">
+                                <div class="button-pair">
+                                    <button onclick="window.modificaArticolo('${articolo.cod}')" class="button">Modifica</button>
+                                    <button onclick="window.toggleStato('${articolo.cod}', ${articolo.attivo})" class="button">
+                                        ${articolo.attivo ? 'Disattiva' : 'Attiva'}
+                                    </button>
+                                </div>
+                                <div class="button-pair">
+                                    ${hasKit ? `
+                                        <button onclick="window.visualizzaKit('${currentSettore}', '${articolo.cod}')" class="button button-green">
+                                            KIT A
+                                        </button>
+                                    ` : isComponente ? `
+                                        <button onclick="window.visualizzaKit('${currentSettore}', '${articolo.cod}')" class="button button-info">
+                                            INFO KIT
+                                        </button>
+                                    ` : '<span class="button-placeholder"></span>'}
+                                    <button onclick="window.eliminaArticolo('${articolo.cod}')" class="button button-red">Elimina</button>
+                                </div>
                             </td>
-                        </tr>
-                    `).join('');
+                        </tr>`;
+                });
+            });
+
+            tableBody.innerHTML = html || `
+                <tr>
+                    <td colspan="7" class="no-data">
+                        Nessun articolo trovato
+                    </td>
+                </tr>`;
+        }
+
+        async function loadArticoli() {
+            const params = new URLSearchParams(window.location.search);
+            const settore = params.get('settore')?.toUpperCase();
+            currentSettore = settore;
+            
+            if (!settore || !SETTORI[settore]) {
+                alert('Settore non specificato');
+                history.back();
+                return;
+            }
+
+            const settoreInfo = SETTORI[settore];
+            document.title = `EVENT TRACK - Visualizza Articoli ${settoreInfo.nome}`;
+            document.getElementById('titoloLista').textContent = `Visualizza Articoli ${settoreInfo.nome}`;
+            document.getElementById('descrizioneSettore').textContent = 
+                `Elenco completo degli articoli ${settoreInfo.nome.toLowerCase()}`;
+
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = '0';
+            progressBar.style.display = 'block';
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableBody = document.getElementById('articoliTable');
+            
+            try {
+                // Inizia la barra di caricamento
+                progressBar.style.width = '50%';
+                
+                await loadKitInfo();
+
+                const result = await articoliService.getArticoli(settore);
+                if (!result.success) {
+                    throw new Error(result.error);
                 }
+
+                currentArticoli = result.data;
+
+                updateDisplay(currentArticoli);
+
+                // Completa la barra di caricamento
+                progressBar.style.width = '100%';
+
             } catch (error) {
                 console.error('Errore durante il caricamento:', error);
                 tableBody.innerHTML = `
@@ -130,39 +378,194 @@
                     </tr>`;
             } finally {
                 loadingIndicator.style.display = 'none';
-                tableContainer.style.display = 'block';
+                setTimeout(() => {
+                    document.querySelector('.progress-bar-container').style.display = 'none';
+                }, 500);
             }
         }
 
-        // Crea il modal per la modifica della quantità
-        createQuantityModal();
-
-        // Funzione globale per modificare la quantità
-        window.modificaQuantita = async (cod) => {
-            const modal = document.getElementById('quantityModal');
-            const form = document.getElementById('quantityForm');
-            
-            form.onsubmit = async (e) => {
-                e.preventDefault();
-                const nuovaQuantita = parseInt(document.getElementById('nuovaQuantita').value);
+        window.visualizzaKit = async (settore, codice) => {
+            try {
+                const isKit = kitArticoli.has(`${settore}-${codice}`);
+                const isComponente = kitComponenti.has(`${settore}-${codice}`);
                 
-                try {
-                    const result = await articoliService.updateQuantita(currentSettore, cod, nuovaQuantita);
-                    if (result.success) {
-                        modal.style.display = 'none';
-                        await loadArticoli();
-                    } else {
-                        alert('Errore durante l\'aggiornamento: ' + result.error);
-                    }
-                } catch (error) {
-                    alert('Errore durante l\'aggiornamento: ' + error.message);
+                if (!isKit && !isComponente) {
+                    throw new Error('Nessuna informazione kit trovata');
                 }
-            };
-            
-            modal.style.display = 'block';
+
+                let modal = document.getElementById('kitModal');
+                if (!modal) {
+                    const modalHTML = `
+                        <div id="kitModal" class="modal">
+                            <div class="modal-content">
+                                <span class="modal-close">&times;</span>
+                                <h3>Dettagli Kit</h3>
+                                <div class="kit-details"></div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                    modal = document.getElementById('kitModal');
+
+                    const closeBtn = modal.querySelector('.modal-close');
+                    closeBtn.onclick = () => modal.style.display = 'none';
+                    window.onclick = (e) => {
+                        if (e.target === modal) modal.style.display = 'none';
+                    };
+                }
+
+                const kitDetails = modal.querySelector('.kit-details');
+                
+                if (isKit) {
+                    const kit = kitArticoli.get(`${settore}-${codice}`);
+                    
+                    const componentiPromises = (kit.kit_componenti || []).map(async comp => {
+                        try {
+                            const result = await articoliService.getArticoli(comp.componente_settore);
+                            if (!result.success) {
+                                throw new Error(`Errore caricamento articoli ${comp.componente_settore}`);
+                            }
+
+                            const articolo = result.data.find(a => a.cod === comp.componente_cod);
+                            if (!articolo) {
+                                throw new Error(`Articolo ${comp.componente_cod} non trovato`);
+                            }
+
+                            return {
+                                ...comp,
+                                descrizione: articolo.descrizione
+                            };
+                        } catch (error) {
+                            console.error(`Errore caricamento componente ${comp.componente_cod}:`, error);
+                            return {
+                                ...comp,
+                                descrizione: `Errore: ${error.message}`
+                            };
+                        }
+                    });
+
+                    const componentiConDescrizioni = await Promise.all(componentiPromises);
+
+                    kitDetails.innerHTML = `
+                        <div class="kit-info">
+                            <p><strong>Nome Kit:</strong> ${kit.nome}</p>
+                            <p><strong>Descrizione:</strong> ${kit.descrizione || '-'}</p>
+                            <p><strong>Note:</strong> ${kit.note || '-'}</p>
+                        </div>
+                        <div class="kit-components">
+                            <h4>Componenti del Kit:</h4>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Settore</th>
+                                        <th>Articoli del Kit</th>
+                                        <th>Quantità</th>
+                                        <th>Note</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${componentiConDescrizioni.map(comp => `
+                                        <tr>
+                                            <td>${SETTORI[comp.componente_settore]?.nome || comp.componente_settore}</td>
+                                            <td>${comp.descrizione || 'Descrizione non disponibile'}</td>
+                                            <td>${comp.quantita}</td>
+                                            <td>${comp.note || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    const kits = kitComponenti.get(`${settore}-${codice}`);
+                    kitDetails.innerHTML = `
+                        <div class="kit-info">
+                            <h4>Questo articolo è utilizzato nei seguenti kit:</h4>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Settore</th>
+                                        <th>Nome Kit</th>
+                                        <th>Quantità</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${kits.map(kit => `
+                                        <tr>
+                                            <td>${SETTORI[kit.kit_settore]?.nome || kit.kit_settore}</td>
+                                            <td>${kit.kit_nome}</td>
+                                            <td>${kit.quantita}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                modal.style.display = 'block';
+
+            } catch (error) {
+                console.error('Errore durante la visualizzazione del kit:', error);
+                alert('Errore durante la visualizzazione del kit: ' + error.message);
+            }
         };
 
-        // Funzione globale per cambiare lo stato attivo/inattivo
+        window.modificaArticolo = async (cod) => {
+            const modal = createArticoloModal();
+            const form = modal.querySelector('#articoloForm');
+            
+            try {
+                const categorieResult = await settoriService.getCategorieBySettore(currentSettore);
+                if (!categorieResult.success) throw new Error(categorieResult.error);
+
+                const categorieSelect = form.categoria;
+                categorieSelect.innerHTML = '<option value="">Seleziona categoria</option>';
+                categorieResult.data.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.categoria;
+                    option.textContent = cat.categoria;
+                    categorieSelect.appendChild(option);
+                });
+
+                const articolo = currentArticoli.find(a => a.cod === cod);
+                if (!articolo) throw new Error('Articolo non trovato');
+
+                form.descrizione.value = articolo.descrizione;
+                form.categoria.value = articolo.categoria;
+                form.quantita.value = articolo.quantita || 0;
+                form.ubicazione.value = articolo.ubicazione || '';
+                form.attivo.checked = articolo.attivo;
+
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = {
+                        descrizione: form.descrizione.value,
+                        categoria: form.categoria.value,
+                        quantita: parseInt(form.quantita.value),
+                        ubicazione: form.ubicazione.value,
+                        attivo: form.attivo.checked
+                    };
+
+                    try {
+                        const result = await articoliService.updateArticolo(currentSettore, cod, formData);
+                        if (result.success) {
+                            modal.style.display = 'none';
+                            await loadArticoli();
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } catch (error) {
+                        alert('Errore durante l\'aggiornamento: ' + error.message);
+                    }
+                };
+
+                modal.style.display = 'block';
+            } catch (error) {
+                alert('Errore durante il caricamento dell\'articolo: ' + error.message);
+            }
+        };
+
         window.toggleStato = async (cod, statoAttuale) => {
             if (confirm(`Sei sicuro di voler ${statoAttuale ? 'disattivare' : 'attivare'} questo articolo?`)) {
                 try {
@@ -170,20 +573,43 @@
                     if (result.success) {
                         await loadArticoli();
                     } else {
-                        alert('Errore durante l\'aggiornamento dello stato: ' + result.error);
+                        throw new Error(result.error);
                     }
                 } catch (error) {
-                    alert('Errore durante l\'aggiornamento dello stato: ' + error.message);
+                    alert('Errore durante la modifica dello stato: ' + error.message);
                 }
             }
         };
 
-        // Chiusura del modal
-        document.querySelector('.close-modal').onclick = () => {
-            document.getElementById('quantityModal').style.display = 'none';
+        window.eliminaArticolo = async (cod) => {
+            if (confirm('Sei sicuro di voler eliminare questo articolo? Questa azione non può essere annullata.')) {
+                try {
+                    const result = await articoliService.deleteArticolo(currentSettore, cod);
+                    if (result.success) {
+                        await loadArticoli();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'eliminazione: ' + error.message);
+                }
+            }
         };
 
-        // Carica gli articoli all'avvio
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchText = e.target.value;
+            const searchField = document.getElementById('searchFilter').value;
+            const filteredArticoli = filterArticoli(searchText, searchField);
+            updateDisplay(filteredArticoli);
+        });
+
+        document.getElementById('searchFilter').addEventListener('change', (e) => {
+            const searchText = document.getElementById('searchInput').value;
+            const searchField = e.target.value;
+            const filteredArticoli = filterArticoli(searchText, searchField);
+            updateDisplay(filteredArticoli);
+        });
+
         document.addEventListener('DOMContentLoaded', loadArticoli);
     </script>
 </body>

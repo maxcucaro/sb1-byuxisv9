@@ -29,15 +29,69 @@
         <div class="page-description">
             <h2>Aggiungi Fornitore</h2>
             <p>Inserimento di un nuovo fornitore nel sistema</p>
-            
-            <div class="button-container" style="margin-top: 2rem;">
-                <button onclick="history.back()" class="button">TORNA INDIETRO</button>
-            </div>
+        </div>
+
+        <div class="form-container">
+            <form id="fornitoreForm">
+                <div class="form-group">
+                    <label for="ragione_sociale" class="required-field">Ragione Sociale</label>
+                    <input type="text" id="ragione_sociale" name="ragione_sociale" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="pec">PEC</label>
+                    <input type="email" id="pec" name="pec">
+                </div>
+                <div class="form-group">
+                    <label for="telefono">Telefono</label>
+                    <input type="text" id="telefono" name="telefono">
+                </div>
+                <div class="form-group">
+                    <label for="attivo">Attivo</label>
+                    <input type="checkbox" id="attivo" name="attivo">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button">Salva</button>
+                    <button type="button" onclick="history.back()" class="button">Annulla</button>
+                </div>
+            </form>
         </div>
     </main>
 
     <footer class="footer">
         <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
     </footer>
+
+    <script type="module">
+        import { FornitoreForm } from '../../js/forms/FornitoreForm.js';
+        import { anagraficheService } from '../../js/services/anagraficheService.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const fornitoreForm = new FornitoreForm();
+
+            document.getElementById('fornitoreForm').onsubmit = async (e) => {
+                e.preventDefault();
+
+                try {
+                    if (fornitoreForm.validate()) {
+                        const formData = fornitoreForm.getFormData();
+                        const result = await anagraficheService.addFornitore(formData);
+
+                        if (result.success) {
+                            alert('Fornitore aggiunto con successo!');
+                            window.location.href = 'lista_fornitori.html';
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    }
+                } catch (error) {
+                    alert('Errore durante il salvataggio: ' + error.message);
+                }
+            };
+        });
+    </script>
 </body>
 </html>

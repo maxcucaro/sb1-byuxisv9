@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Crea Richiesta Materiali</title>
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="../../../css/workspace/layout.css">
+    <link rel="stylesheet" href="../../../css/table.css">
+    <link rel="stylesheet" href="../../../css/materiali.css">
+</head>
+<body class="ws-container">
+    <header class="ws-header">
+        <div class="ws-header-content">
+            <h1>EVENT TRACK WORKSPACE</h1>
+            <p class="ws-tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="ws-nav">
+        <div class="ws-nav-container">
+            <ul>
+                <li><a href="../../../index.html">Home</a></li>
+                <li><a href="creazione-scheda.html">Nuova Scheda</a></li>
+                <li><a href="liste-aperte.html">Liste Aperte</a></li>
+                <li><a href="richiesta.html" class="active">Richiesta</a></li>
+                <li><a href="../magazzino/preparazione.html">Preparazione</a></li>
+                <li><a href="../magazzino/movimentazione.html">Movimentazione</a></li>
+                <li><a href="../report/lista.html">Report</a></li>
+                <li><a href="storico.html">Storico</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="ws-main">
+        <div class="ws-content">
+            <h2>Crea Richiesta Materiali</h2>
+
+            <!-- Scheda Info -->
+            <div class="scheda-info">
+                <div class="info-row">
+                    <div class="info-group">
+                        <label>Codice:</label>
+                        <span id="codiceScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Nome:</label>
+                        <span id="nomeScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Tipo:</label>
+                        <span id="tipoLavoroScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Riferimento:</label>
+                        <span id="riferimentoScheda"></span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-group">
+                        <label>Date:</label>
+                        <span id="dateScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Luogo:</label>
+                        <span id="luogoScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Responsabile:</label>
+                        <span id="responsabileScheda"></span>
+                    </div>
+                    <div class="info-group">
+                        <label>Stato:</label>
+                        <span id="statoScheda" class="status-badge"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Preparazione e Rientro -->
+            <div class="scheda-info">
+                <div class="info-row">
+                    <div class="info-group">
+                        <label for="dataPreparazione">Data Preparazione:</label>
+                        <input type="date" id="dataPreparazione" name="dataPreparazione" class="date-input">
+                    </div>
+                    <div class="info-group">
+                        <label for="dataRientro">Data Rientro Materiali:</label>
+                        <input type="date" id="dataRientro" name="dataRientro" class="date-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Container -->
+            <div id="loadingContainer" class="loading-container" style="display: none;">
+                <div class="loading-spinner">
+                    <div class="spinner-circle"></div>
+                    <div class="spinner-percentage">0%</div>
+                </div>
+                <p class="loading-text">Caricamento in corso...</p>
+            </div>
+
+            <!-- Enhanced Filters Section -->
+            <div class="filters-section">
+                <div class="search-bar">
+                    <select id="settoreFilter" class="search-filter">
+                        <option value="">Seleziona settore</option>
+                        <!-- Settori verranno popolati dinamicamente -->
+                    </select>
+                    <div class="search-input-container">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Cerca per codice, descrizione..."
+                            class="search-input"
+                            disabled
+                        >
+                        <div class="search-suggestions" id="searchSuggestions"></div>
+                    </div>
+                    <select id="categoriaFilter" class="search-filter" disabled>
+                        <option value="">Tutte le categorie</option>
+                    </select>
+                </div>
+                <div class="search-stats">
+                    <span id="searchResults">0 articoli trovati</span>
+                    <button id="clearSearch" class="button clear-button" style="display: none;">
+                        Cancella ricerca
+                    </button>
+                </div>
+            </div>
+
+            <!-- Materiali Container -->
+            <div id="materialiContainer"></div>
+
+            <!-- Actions -->
+            <div class="actions-container">
+                <button onclick="window.salvaRichiesta()" class="button">Salva Richiesta</button>
+                <button onclick="window.salvaEAvvia()" class="button workspace-button">Salva e Avvia Preparazione</button>
+                <button onclick="history.back()" class="button">Annulla</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="ws-footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { schedeLavoroService } from '../../../js/services/schedeLavoroService.js';
+        import { materialiRichiestiService } from '../../../js/services/materialiRichiestiService.js';
+        import { displaySchedaDetails } from '../../../js/components/materiali/SchedaDisplay.js';
+        import { displayCreaMaterialiRichiesta } from '../../../js/components/materiali/CreaMaterialiRichiestaDisplay.js';
+        import { showGiacenzaEffettiva } from '../../../js/components/materiali/ImpegniModal.js';
+        import { SETTORI } from '../../../js/utils/constants.js';
+        import { SearchOptimizer } from '../../../js/components/materiali/SearchOptimizer.js';
+        import { inventoryCache } from '../../../js/components/materiali/InventoryCache.js';
+
+        let schedaCorrente = null;
+        let currentArticoli = [];
+        const searchOptimizer = new SearchOptimizer();
+
+        async function initPage() {
+            const params = new URLSearchParams(window.location.search);
+            const schedaId = params.get('id');
+
+            if (!schedaId) {
+                alert('ID scheda non valido');
+                history.back();
+                return;
+            }
+
+            try {
+                // Load scheda
+                const result = await schedeLavoroService.getSchedaLavoroById(schedaId);
+                if (!result.success) throw new Error(result.error);
+
+                schedaCorrente = result.data;
+                
+                // Display scheda details
+                displaySchedaDetails(schedaCorrente);
+
+                // Popola settori
+                const settoreFilter = document.getElementById('settoreFilter');
+                Object.entries(SETTORI).forEach(([key, value]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = value.nome;
+                    settoreFilter.appendChild(option);
+                });
+
+                // Setup handlers
+                setupEventHandlers();
+
+            } catch (error) {
+                console.error('Errore durante l\'inizializzazione:', error);
+                alert('Errore durante l\'inizializzazione: ' + error.message);
+                history.back();
+            }
+        }
+
+        function setupEventHandlers() {
+            const settoreFilter = document.getElementById('settoreFilter');
+            const searchInput = document.getElementById('searchInput');
+            const categoriaFilter = document.getElementById('categoriaFilter');
+            const clearSearch = document.getElementById('clearSearch');
+            const searchSuggestions = document.getElementById('searchSuggestions');
+
+            // Settore change handler
+            settoreFilter.addEventListener('change', async () => {
+                const settore = settoreFilter.value;
+                searchInput.disabled = !settore;
+                categoriaFilter.disabled = !settore;
+                searchInput.value = '';
+                categoriaFilter.value = '';
+                clearSearch.style.display = 'none';
+                searchSuggestions.innerHTML = '';
+                
+                if (!settore) {
+                    document.getElementById('materialiContainer').innerHTML = '';
+                    return;
+                }
+
+                await loadArticoli(settore);
+            });
+
+            // Search input handler with debouncing
+            searchInput.addEventListener('input', () => {
+                const searchText = searchInput.value.trim();
+                clearSearch.style.display = searchText ? 'block' : 'none';
+
+                searchOptimizer.debounce(() => {
+                    if (searchText.length >= searchOptimizer.minSearchLength) {
+                        const filteredItems = searchOptimizer.filterResults(currentArticoli, searchText);
+                        updateResults(filteredItems, searchText);
+                        showSuggestions(filteredItems, searchText);
+                    } else {
+                        updateResults(currentArticoli);
+                        searchSuggestions.innerHTML = '';
+                    }
+                });
+            });
+
+            // Clear search handler
+            clearSearch.addEventListener('click', () => {
+                searchInput.value = '';
+                clearSearch.style.display = 'none';
+                searchSuggestions.innerHTML = '';
+                updateResults(currentArticoli);
+            });
+
+            // Category filter handler
+            categoriaFilter.addEventListener('change', () => {
+                const searchText = searchInput.value.trim();
+                const categoria = categoriaFilter.value;
+                
+                const filteredItems = currentArticoli.filter(item => {
+                    const matchSearch = !searchText || 
+                        searchOptimizer.filterResults([item], searchText).length > 0;
+                    const matchCategoria = !categoria || item.categoria === categoria;
+                    return matchSearch && matchCategoria;
+                });
+
+                updateResults(filteredItems, searchText);
+            });
+        }
+
+        async function loadArticoli(settore) {
+            const loadingContainer = document.getElementById('loadingContainer');
+            loadingContainer.style.display = 'block';
+            document.getElementById('materialiContainer').innerHTML = '';
+
+            try {
+                updateLoadingProgress(30, 'Caricamento articoli...');
+
+                // Get articles from cache
+                currentArticoli = await inventoryCache.getArticoliBySector(settore);
+                
+                // Update category filter
+                searchOptimizer.updateCategoryFilter(currentArticoli, document.getElementById('categoriaFilter'));
+
+                // Display articles
+               await displayCreaMaterialiRichiesta(
+               document.getElementById('materialiContainer'),
+               schedaCorrente.data_inizio
+               );
+
+                updateResults(currentArticoli);
+                updateLoadingProgress(100, 'Completato');
+
+            } catch (error) {
+                console.error('Errore caricamento articoli:', error);
+                alert('Errore durante il caricamento degli articoli: ' + error.message);
+            } finally {
+                setTimeout(() => {
+                    loadingContainer.style.display = 'none';
+                }, 500);
+            }
+        }
+
+        function updateResults(items, searchText = '') {
+            const searchResults = document.getElementById('searchResults');
+            searchResults.textContent = `${items.length} articoli trovati`;
+
+            const rows = document.querySelectorAll('#materialiContainer tbody tr');
+            rows.forEach(row => {
+                const cod = row.querySelector('td:first-child')?.textContent;
+                const item = items.find(i => i.cod === cod);
+                
+                if (item) {
+                    row.style.display = '';
+                    if (searchText) {
+                        row.querySelectorAll('td').forEach(cell => {
+                            if (!cell.querySelector('input')) {
+                                cell.innerHTML = searchOptimizer.highlightText(cell.textContent, searchText);
+                            }
+                        });
+                    }
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function showSuggestions(items, searchText) {
+            const suggestions = document.getElementById('searchSuggestions');
+            if (items.length === 0 || !searchText) {
+                suggestions.innerHTML = '';
+                return;
+            }
+
+            const limitedItems = items.slice(0, 5);
+            suggestions.innerHTML = `
+                <ul>
+                    ${limitedItems.map(item => `
+                        <li>
+                            <strong>${searchOptimizer.highlightText(item.cod, searchText)}</strong>
+                            ${searchOptimizer.highlightText(item.descrizione, searchText)}
+                        </li>
+                    `).join('')}
+                    ${items.length > 5 ? `
+                        <li class="more-results">
+                            + altri ${items.length - 5} risultati...
+                        </li>
+                    ` : ''}
+                </ul>
+            `;
+        }
+
+        function updateLoadingProgress(percentage, text = null) {
+            const spinnerCircle = document.querySelector('.spinner-circle');
+            const spinnerPercentage = document.querySelector('.spinner-percentage');
+            const loadingText = document.querySelector('.loading-text');
+            
+            spinnerCircle.style.background = `conic-gradient(from 0deg, var(--accent-color) ${percentage}%, transparent ${percentage}%)`;
+            spinnerPercentage.textContent = `${percentage}%`;
+            
+            if (text) {
+                loadingText.textContent = text;
+            }
+        }
+
+        window.showImpegni = async (settore, codice) => {
+            await showGiacenzaEffettiva(settore, codice);
+        };
+
+        window.salvaRichiesta = async () => {
+            if (!schedaCorrente) return;
+
+            try {
+                // Recupera le date
+                const dataPreparazione = document.getElementById('dataPreparazione').value;
+                const dataRientro = document.getElementById('dataRientro').value;
+
+                // Raccogli i materiali
+                const materiali = [];
+                document.querySelectorAll('.quantity-input').forEach(input => {
+                    const quantita = parseInt(input.value) || 0;
+                    if (quantita > 0) {
+                        const note = input.closest('tr').querySelector('.note-input').value;
+                        materiali.push({
+                            settore: input.dataset.settore,
+                            cod: input.dataset.codice,
+                            quantita: quantita,
+                            note: note || null
+                        });
+                    }
+                });
+
+                if (materiali.length === 0) {
+                    throw new Error('Seleziona almeno un materiale');
+                }
+
+                // Aggiorna la scheda con le date
+                const schedaResult = await schedeLavoroService.updateSchedaLavoro(
+                    schedaCorrente.id, 
+                    {
+                        data_inizio_preparazione: dataPreparazione || null,
+                        data_rientro_lavoro: dataRientro || null
+                    }
+                );
+
+                if (!schedaResult.success) {
+                    throw new Error(schedaResult.error);
+                }
+
+                // Salva i materiali
+                const materialiResult = await materialiRichiestiService.updateRichiestaMateriali(
+                    schedaCorrente.id,
+                    materiali
+                );
+
+                if (!materialiResult.success) {
+                    throw new Error(materialiResult.error);
+                }
+
+                alert('Richiesta salvata con successo!');
+                history.back();
+            } catch (error) {
+                alert('Errore durante il salvataggio: ' + error.message);
+            }
+        };
+
+        window.salvaEAvvia = async () => {
+            if (!schedaCorrente) return;
+
+            try {
+                // Recupera le date
+                const dataPreparazione = document.getElementById('dataPreparazione').value;
+                const dataRientro = document.getElementById('dataRientro').value;
+
+                // Raccogli i materiali
+                const materiali = [];
+                document.querySelectorAll('.quantity-input').forEach(input => {
+                    const quantita = parseInt(input.value) || 0;
+                    if (quantita > 0) {
+                        const note = input.closest('tr').querySelector('.note-input').value;
+                        materiali.push({
+                            settore: input.dataset.settore,
+                            cod: input.dataset.codice,
+                            quantita: quantita,
+                            note: note || null
+                        });
+                    }
+                });
+
+                if (materiali.length === 0) {
+                    throw new Error('Seleziona almeno un materiale');
+                }
+
+                // Aggiorna la scheda con le date
+                const schedaResult = await schedeLavoroService.updateSchedaLavoro(
+                    schedaCorrente.id, 
+                    {
+                        data_inizio_preparazione: dataPreparazione || null,
+                        data_rientro_lavoro: dataRientro || null
+                    }
+                );
+
+                if (!schedaResult.success) {
+                    throw new Error(schedaResult.error);
+                }
+
+                // Salva i materiali
+                const materialiResult = await materialiRichiestiService.updateRichiestaMateriali(
+                    schedaCorrente.id,
+                    materiali
+                );
+
+                if (!materialiResult.success) {
+                    throw new Error(materialiResult.error);
+                }
+
+                // Aggiorna lo stato a IN_CORSO
+                const statoResult = await schedeLavoroService.updateStato(
+                    schedaCorrente.id,
+                    'IN_CORSO'
+                );
+
+                if (!statoResult.success) {
+                    throw new Error(statoResult.error);
+                }
+
+                alert('Richiesta salvata e preparazione avviata con successo!');
+                window.location.href = '../magazzino/preparazione.html';
+
+            } catch (error) {
+                alert('Errore durante il salvataggio: ' + error.message);
+            }
+        };
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+
+    <style>
+        .info-group .date-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            color: var(--text-color);
+            background-color: #f8fafc;
+        }
+
+        .info-group .date-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+        }
+
+        .scheda-info {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-row {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-group {
+            flex: 1;
+        }
+
+        .info-group label {
+            font-weight: 500;
+            color: var(--text-color);
+            margin-right: 0.5rem;
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .loading-spinner {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1rem;
+        }
+
+        .spinner-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, var(--accent-color) 0%, transparent 0%);
+            animation: rotate 2s linear infinite;
+            position: relative;
+        }
+
+        .spinner-circle::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .spinner-percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .loading-text {
+            color: var(--text-color);
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .filters-section {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .search-input-container {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .search-filter {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            min-width: 150px;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .search-suggestions ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .search-suggestions li {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .search-suggestions li:last-child {
+            border-bottom: none;
+        }
+
+        .search-suggestions li:hover {
+            background-color: #f8fafc;
+        }
+
+        .search-suggestions .more-results {
+            text-align: center;
+            color: #6B7280;
+            font-style: italic;
+        }
+
+        .search-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #6B7280;
+        }
+
+        .clear-button {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .clear-button:hover {
+            background-color: #dc2626;
+        }
+
+        .actions-container {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        .workspace-button {
+            background-color: #10b981 !important;
+            color: white !important;
+            min-width: 180px !important;
+        }
+        
+        .workspace-button:hover {
+            background-color: #059669 !important;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .status-bozza { background: #fef3c7; color: #92400e; }
+        .status-approvata { background: #d1fae5; color: #065f46; }
+        .status-in_corso { background: #dbeafe; color: #1e40af; }
+        .status-completata { background: #dcfce7; color: #166534; }
+        .status-annullata { background: #fee2e2; color: #991b1b; }
+
+        mark {
+            background-color: #fef08a;
+            padding: 0.125rem;
+            border-radius: 0.125rem;
+        }
+
+        @media (max-width: 768px) {
+            .search-bar {
+                flex-direction: column;
+            }
+
+            .info-row {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</body>
+</html>

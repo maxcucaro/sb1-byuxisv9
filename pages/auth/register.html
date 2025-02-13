@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Richiesta Registrazione</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/form.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="auth-container">
+            <h2>Richiesta Registrazione</h2>
+            <p class="auth-description">
+                Compila il form sottostante per richiedere l'accesso a EVENT TRACK. 
+                Verrai contattato per completare la registrazione.
+            </p>
+
+            <form id="registrationForm" class="auth-form">
+                <div class="form-group">
+                    <label for="ragioneSociale" class="required-field">Ragione Sociale</label>
+                    <input type="text" id="ragioneSociale" name="ragioneSociale" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="piva" class="required-field">Partita IVA</label>
+                    <input type="text" id="piva" name="piva" required pattern="[0-9]{11}" title="La partita IVA deve contenere 11 numeri">
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="required-field">Email Aziendale</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="telefono" class="required-field">Telefono</label>
+                    <input type="tel" id="telefono" name="telefono" required pattern="[0-9+\s-]{5,20}" title="Inserire un numero di telefono valido">
+                </div>
+
+                <div class="form-group">
+                    <label for="referente" class="required-field">Nome Referente</label>
+                    <input type="text" id="referente" name="referente" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="piano" class="required-field">Piano Richiesto</label>
+                    <select id="piano" name="piano" required>
+                        <option value="">Seleziona piano</option>
+                        <option value="base">Base - Gestione Base</option>
+                        <option value="pro">Professional - Gestione Avanzata</option>
+                        <option value="enterprise">Enterprise - Funzionalità Complete</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="note">Note</label>
+                    <textarea id="note" name="note" rows="3"></textarea>
+                </div>
+
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button">Invia Richiesta</button>
+                    <a href="../../index.html" class="button">Annulla</a>
+                </div>
+            </form>
+
+            <div class="auth-footer">
+                <p>Hai già un account? <a href="login.html">Accedi</a></p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { authService } from '../../js/services/authService.js';
+
+        document.getElementById('registrationForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            submitButton.disabled = true;
+            errorMessage.style.display = 'none';
+
+            try {
+                const formData = Object.fromEntries(new FormData(e.target));
+                
+                // Validazione partita IVA
+                if (!/^[0-9]{11}$/.test(formData.piva)) {
+                    throw new Error('La partita IVA deve contenere 11 numeri');
+                }
+
+                // Validazione telefono
+                if (!/^[0-9+\s-]{5,20}$/.test(formData.telefono)) {
+                    throw new Error('Inserire un numero di telefono valido');
+                }
+
+                // Invia la richiesta
+                const result = await authService.submitRegistration(formData);
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                // Mostra messaggio di successo
+                alert('Richiesta inviata con successo! Verrai contattato per completare la registrazione.');
+                window.location.href = '../../index.html';
+
+            } catch (error) {
+                console.error('Errore durante l\'invio della richiesta:', error);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+                submitButton.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

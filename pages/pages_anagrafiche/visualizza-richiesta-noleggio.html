@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Visualizza Richiesta Noleggio</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../pages/workspace/schede/liste-aperte.html">Workspace</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="header-actions">
+            <h2>Richiesta Noleggio <span id="codiceRichiesta"></span></h2>
+            <div class="status-badge" id="statoRichiesta"></div>
+        </div>
+
+        <div class="richiesta-details">
+            <div class="info-section">
+                <h3>Informazioni Generali</h3>
+                <table class="details-table">
+                    <tr>
+                        <th>Data Richiesta:</th>
+                        <td id="dataRichiesta"></td>
+                    </tr>
+                    <tr>
+                        <th>Fornitore:</th>
+                        <td id="fornitoreRichiesta"></td>
+                    </tr>
+                    <tr>
+                        <th>Note:</th>
+                        <td id="noteRichiesta"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-section">
+                <h3>Articoli Richiesti</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Descrizione</th>
+                                <th>Quantità</th>
+                                <th>Prezzo</th>
+                                <th>Data Inizio</th>
+                                <th>Data Fine</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody id="articoliTable">
+                            <!-- La tabella verrà popolata dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-container">
+            <button onclick="window.cambiaStato()" class="button" id="statoButton">Cambia Stato</button>
+            <button onclick="window.stampaPDF()" class="button print-button">Stampa PDF</button>
+            <button onclick="history.back()" class="button">Torna Indietro</button>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { richiesteNoleggioService } from '../../js/services/richiesteNoleggioService.js';
+        import { pdfService } from '../../js/services/pdfService.js';
+
+        let richiestaCorrente = null;
+
+        async function loadRichiesta() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            
+            if (!id) {
+                alert('ID richiesta non valido');
+                history.back();
+                return;
+            }
+
+            try {
+                const result = await richiesteNoleggioService.getRichiestaById(id);
+                if (!result.success) throw new Error(result.error);
+
+                richiestaCorrente = result.data;
+                
+                // Mostra i dettagli della richiesta
+                document.getElementById('codiceRichiesta').textContent = richiestaCorrente.codice;
+                document.getElementById('dataRichiesta').textContent = 
+                    new Date(richiestaCorrente.data_richiesta).toLocaleDateString();
+                document.getElementById('fornitoreRichiesta').textContent = 
+                    richiestaCorrente.fornitore?.ragione_sociale || '-';
+                document.getElementById('noteRichiesta').textContent = 
+                    richiestaCorrente.note || '-';
+
+                // Imposta lo stato
+                const statoElement = document.getElementById('statoRichiesta');
+                statoElement.textContent = richiestaCorrente.stato;
+                statoElement.className = `status-badge status-${richiestaCorrente.stato.toLowerCase()}`;
+
+                // Mostra gli articoli
+                const tableBody = document.getElementById('articoliTable');
+                if (!richiestaCorrente.articoli?.length) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="no-data">
+                                Nessun articolo richiesto
+                            </td>
+                        </tr>`;
+                } else {
+                    tableBody.innerHTML = richiestaCorrente.articoli.map(articolo => `
+                        <tr>
+                            <td>${articolo.descrizione}</td>
+                            <td>${articolo.quantita}</td>
+                            <td>${articolo.prezzo ? `€ ${articolo.prezzo.toFixed(2)}` : '-'}</td>
+                            <td>${new Date(articolo.data_inizio).toLocaleDateString()}</td>
+                            <td>${new Date(articolo.data_fine).toLocaleDateString()}</td>
+                            <td>${articolo.note || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Aggiorna il pulsante di stato
+                updateStatoButton();
+
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                alert('Errore durante il caricamento della richiesta: ' + error.message);
+                history.back();
+            }
+        }
+
+        function updateStatoButton() {
+            const button = document.getElementById('statoButton');
+            if (!richiestaCorrente) return;
+
+            switch (richiestaCorrente.stato) {
+                case 'BOZZA':
+                    button.textContent = 'Invia Richiesta';
+                    button.style.display = 'block';
+                    break;
+                case 'INVIATA':
+                    button.textContent = 'Conferma Richiesta';
+                    button.style.display = 'block';
+                    break;
+                case 'CONFERMATA':
+                    button.style.display = 'none';
+                    break;
+                case 'ANNULLATA':
+                    button.style.display = 'none';
+                    break;
+            }
+        }
+
+        window.cambiaStato = async () => {
+            if (!richiestaCorrente) return;
+
+            let nuovoStato;
+            switch (richiestaCorrente.stato) {
+                case 'BOZZA':
+                    nuovoStato = 'INVIATA';
+                    break;
+                case 'INVIATA':
+                    nuovoStato = 'CONFERMATA';
+                    break;
+                default:
+                    return;
+            }
+
+            if (confirm(`Vuoi cambiare lo stato da ${richiestaCorrente.stato} a ${nuovoStato}?`)) {
+                try {
+                    const result = await richiesteNoleggioService.updateStato(
+                        richiestaCorrente.id,
+                        nuovoStato
+                    );
+                    if (result.success) {
+                        await loadRichiesta();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'aggiornamento dello stato: ' + error.message);
+                }
+            }
+        };
+
+        window.stampaPDF = async () => {
+            if (!richiestaCorrente) return;
+            try {
+                await pdfService.generateRichiestaNoleggioReport(richiestaCorrente);
+            } catch (error) {
+                alert('Errore durante la generazione del PDF: ' + error.message);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', loadRichiesta);
+    </script>
+
+    <style>
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .richiesta-details {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-section {
+            margin-bottom: 2rem;
+        }
+
+        .info-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-section h3 {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .details-table th,
+        .details-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .details-table th {
+            width: 200px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .actions-container {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-start;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+
+        .status-bozza { background: #fef3c7; color: #92400e; }
+        .status-inviata { background: #dbeafe; color: #1e40af; }
+        .status-confermata { background: #d1fae5; color: #065f46; }
+        .status-annullata { background: #fee2e2; color: #991b1b; }
+
+        .print-button {
+            background-color: #8b5cf6 !important;
+            color: white !important;
+        }
+        
+        .print-button:hover {
+            background-color: #7c3aed !important;
+        }
+    </style>
+</body>
+</html>

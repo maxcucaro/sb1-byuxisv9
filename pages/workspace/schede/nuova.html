@@ -158,14 +158,35 @@
                     };
 
                     // Aggiorna l'handler del form per includere i materiali
-                    form.onsubmit = (e) => {
+                    form.onsubmit = async (e) => {
                         e.preventDefault();
                         const formData = new FormData(form);
                         const materiali = materialiManager.getMateriali();
                         
-                        // TODO: Implementare la logica di salvataggio con i materiali
-                        console.log('Form Data:', Object.fromEntries(formData));
-                        console.log('Materiali:', materiali);
+                        // Logica di salvataggio con API call
+                        try {
+                            const response = await fetch('/api/schedaLavoro', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    ...Object.fromEntries(formData),
+                                    materiali
+                                })
+                            });
+
+                            const result = await response.json();
+                            if (response.ok) {
+                                alert('Scheda Lavoro salvata con successo!');
+                                window.location.href = '../index.html';
+                            } else {
+                                throw new Error(result.error || 'Errore durante il salvataggio');
+                            }
+                        } catch (error) {
+                            console.error('Errore durante il salvataggio:', error);
+                            alert('Errore durante il salvataggio: ' + error.message);
+                        }
                     };
                 }
 

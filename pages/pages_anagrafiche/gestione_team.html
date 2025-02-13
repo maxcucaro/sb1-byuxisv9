@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="stylesheet" href="../../css/table.css">
     <link rel="stylesheet" href="../../css/modal.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
     <header class="header">
@@ -274,6 +275,21 @@
             }
         };
 
+        window.eliminaDipendente = async (id) => {
+            if (confirm('Sei sicuro di voler eliminare questo dipendente? Questa azione non può essere annullata.')) {
+                try {
+                    const result = await teamService.deleteDipendente(id);
+                    if (result.success) {
+                        await loadTeam();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante l\'eliminazione: ' + error.message);
+                }
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', initializePage);
     </script>
 
@@ -281,6 +297,15 @@
         .status-active { color: #10b981; }
         .status-inactive { color: #ef4444; }
         .error-message { color: #ef4444; text-align: center; }
+        
+        .delete-button {
+            background-color: #ef4444 !important;
+            color: white !important;
+        }
+        
+        .delete-button:hover {
+            background-color: #dc2626 !important;
+        }
     </style>
 </body>
 </html>

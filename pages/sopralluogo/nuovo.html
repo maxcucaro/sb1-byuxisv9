@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Nuovo Sopralluogo</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/form.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../sopralluogo.html">Sopralluogo</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../pages/workspace/schede/liste-aperte.html">Workspace</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Nuovo Sopralluogo</h2>
+        
+        <div class="form-container">
+            <form id="sopralluogoForm">
+                <!-- Dati Evento -->
+                <div class="form-section">
+                    <h3>Dati Evento</h3>
+                    
+                    <div class="form-group">
+                        <label for="evento_nome" class="required-field">Nome Evento</label>
+                        <input type="text" id="evento_nome" name="evento_nome" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipo_lavoro" class="required-field">Tipo Lavoro</label>
+                        <div class="tipo-lavoro-container">
+                            <select id="tipo_lavoro" name="tipo_lavoro" required>
+                                <option value="">Seleziona tipo</option>
+                            </select>
+                            <div id="shortcutButtons" class="shortcut-buttons"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" data-field="produzione_id" style="display: none;">
+                        <label for="produzione_id" class="required-field">Produzione</label>
+                        <select id="produzione_id" name="produzione_id">
+                            <option value="">Seleziona produzione</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" data-field="cliente_id" style="display: none;">
+                        <label for="cliente_id" class="required-field">Cliente</label>
+                        <select id="cliente_id" name="cliente_id">
+                            <option value="">Seleziona cliente</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" data-field="cat_id" style="display: none;">
+                        <label for="cat_id" class="required-field">CAT</label>
+                        <select id="cat_id" name="cat_id">
+                            <option value="">Seleziona CAT</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" data-field="fornitore_id" style="display: none;">
+                        <label for="fornitore_id" class="required-field">Fornitore</label>
+                        <select id="fornitore_id" name="fornitore_id">
+                            <option value="">Seleziona fornitore</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="evento_tipologia">Tipologia Evento</label>
+                        <input type="text" id="evento_tipologia" name="evento_tipologia">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="evento_referente">Referente Evento</label>
+                        <input type="text" id="evento_referente" name="evento_referente">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="luogo" class="required-field">Luogo</label>
+                        <input type="text" id="luogo" name="luogo" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="data_inizio" class="required-field">Data Inizio</label>
+                            <input type="date" id="data_inizio" name="data_inizio" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="data_fine" class="required-field">Data Fine</label>
+                            <input type="date" id="data_fine" name="data_fine" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="form-section">
+                    <h3>Location</h3>
+                    
+                    <div class="form-group">
+                        <label for="location_nome">Nome Location</label>
+                        <input type="text" id="location_nome" name="location_nome">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location_indirizzo">Indirizzo</label>
+                        <input type="text" id="location_indirizzo" name="location_indirizzo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location_referente">Referente Location</label>
+                        <input type="text" id="location_referente" name="location_referente">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="location_lunghezza">Lunghezza Sala</label>
+                            <input type="text" id="location_lunghezza" name="location_lunghezza">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="location_larghezza">Larghezza Sala</label>
+                            <input type="text" id="location_larghezza" name="location_larghezza">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accessibilità -->
+                <div class="form-section">
+                    <h3>Accessibilità</h3>
+                    
+                    <div class="form-group">
+                        <label for="accessibilita_parcheggio">Parcheggio</label>
+                        <textarea id="accessibilita_parcheggio" name="accessibilita_parcheggio" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accessibilita_carico_scarico">Carico/Scarico</label>
+                        <textarea id="accessibilita_carico_scarico" name="accessibilita_carico_scarico" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accessibilita_ascensori">Ascensori/Montacarichi</label>
+                        <textarea id="accessibilita_ascensori" name="accessibilita_ascensori" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Piano Lavoro -->
+                <div class="form-section">
+                    <h3>Piano Lavoro</h3>
+                    
+                    <div class="form-group">
+                        <label for="dati_tecnici_scarico">Scarico</label>
+                        <textarea id="dati_tecnici_scarico" name="dati_tecnici_scarico" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dati_tecnici_montaggio">Montaggio</label>
+                        <textarea id="dati_tecnici_montaggio" name="dati_tecnici_montaggio" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dati_tecnici_prove">Prove</label>
+                        <textarea id="dati_tecnici_prove" name="dati_tecnici_prove" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dati_tecnici_evento">Evento</label>
+                        <textarea id="dati_tecnici_evento" name="dati_tecnici_evento" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dati_tecnici_smontaggio">Smontaggio</label>
+                        <textarea id="dati_tecnici_smontaggio" name="dati_tecnici_smontaggio" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dati_tecnici_ricarico">Ricarico</label>
+                        <textarea id="dati_tecnici_ricarico" name="dati_tecnici_ricarico" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Palco -->
+                <div class="form-section">
+                    <h3>Palco</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="palco_lunghezza">Lunghezza</label>
+                            <input type="text" id="palco_lunghezza" name="palco_lunghezza">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="palco_larghezza">Larghezza</label>
+                            <input type="text" id="palco_larghezza" name="palco_larghezza">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="palco_altezza">Altezza</label>
+                            <input type="text" id="palco_altezza" name="palco_altezza">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strutture -->
+                <div class="form-section">
+                    <h3>Strutture</h3>
+                    
+                    <div class="form-group">
+                        <label for="strutture_pedanamento">Pedanamento</label>
+                        <textarea id="strutture_pedanamento" name="strutture_pedanamento" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="strutture_truss">Truss</label>
+                        <textarea id="strutture_truss" name="strutture_truss" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="strutture_elevatori">Elevatori</label>
+                        <textarea id="strutture_elevatori" name="strutture_elevatori" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="strutture_motori">Motori</label>
+                        <textarea id="strutture_motori" name="strutture_motori" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="strutture_ancoraggi_zavorre">Ancoraggi/Zavorre</label>
+                        <textarea id="strutture_ancoraggi_zavorre" name="strutture_ancoraggi_zavorre" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Video -->
+                <div class="form-section">
+                    <h3>Video</h3>
+                    
+                    <div class="form-group">
+                        <label for="video_ledwall">LED Wall</label>
+                        <textarea id="video_ledwall" name="video_ledwall" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_proiezione">Proiezione</label>
+                        <textarea id="video_proiezione" name="video_proiezione" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_monitor">Monitor</label>
+                        <textarea id="video_monitor" name="video_monitor" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_riprese">Riprese Video</label>
+                        <textarea id="video_riprese" name="video_riprese" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="video_pc_contributi">PC Contributi</label>
+                            <input type="number" id="video_pc_contributi" name="video_pc_contributi" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="video_pc_slide">PC Slide</label>
+                            <input type="number" id="video_pc_slide" name="video_pc_slide" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_note">Note Video</label>
+                        <textarea id="video_note" name="video_note" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Audio -->
+                <div class="form-section">
+                    <h3>Audio</h3>
+                    
+                    <div class="form-group">
+                        <label for="audio_regia">Regia Audio</label>
+                        <textarea id="audio_regia" name="audio_regia" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="audio_pa">PA System</label>
+                        <textarea id="audio_pa" name="audio_pa" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="audio_monitor">Monitor</label>
+                        <textarea id="audio_monitor" name="audio_monitor" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="audio_radiomicrofoni">Radiomicrofoni</label>
+                        <textarea id="audio_radiomicrofoni" name="audio_radiomicrofoni" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="audio_mic_podio">Microfoni Podio</label>
+                            <input type="number" id="audio_mic_podio" name="audio_mic_podio" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="audio_mic_tavolo">Microfoni Tavolo</label>
+                            <input type="number" id="audio_mic_tavolo" name="audio_mic_tavolo" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="audio_note">Note Audio</label>
+                        <textarea id="audio_note" name="audio_note" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Luci -->
+                <div class="form-section">
+                    <h3>Luci</h3>
+                    
+                    <div class="form-group">
+                        <label for="luci_mixer">Mixer Luci</label>
+                        <input type="text" id="luci_mixer" name="luci_mixer">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="luci_piazzato">Piazzato</label>
+                        <textarea id="luci_piazzato" name="luci_piazzato" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="luci_motorizzati">Teste Mobili</label>
+                        <textarea id="luci_motorizzati" name="luci_motorizzati" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="luci_proiettori_batteria">Proiettori a Batteria</label>
+                        <textarea id="luci_proiettori_batteria" name="luci_proiettori_batteria" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="luci_special_fx">Effetti Speciali</label>
+                        <textarea id="luci_special_fx" name="luci_special_fx" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="luci_note">Note Luci</label>
+                        <textarea id="luci_note" name="luci_note" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Corrente -->
+                <div class="form-section">
+                    <h3>Corrente</h3>
+                    
+                    <div class="form-group">
+                        <label for="corrente_potenza">Potenza Disponibile</label>
+                        <input type="text" id="corrente_potenza" name="corrente_potenza">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="corrente_prese">Prese Disponibili</label>
+                        <textarea id="corrente_prese" name="corrente_prese" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="corrente_disposizione">Disposizione Prese</label>
+                        <textarea id="corrente_disposizione" name="corrente_disposizione" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="corrente_generatori_richiesti">Generatori Richiesti</label>
+                        <textarea id="corrente_generatori_richiesti" name="corrente_generatori_richiesti" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="corrente_note">Note Corrente</label>
+                        <textarea id="corrente_note" name="corrente_note" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Personale -->
+                <div class="form-section">
+                    <h3>Personale</h3>
+                    
+                    <div class="form-group">
+                        <label for="personale_video">Personale Video</label>
+                        <textarea id="personale_video" name="personale_video" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="personale_audio">Personale Audio</label>
+                        <textarea id="personale_audio" name="personale_audio" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="personale_luci">Personale Luci</label>
+                        <textarea id="personale_luci" name="personale_luci" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="personale_facchini">Facchini</label>
+                        <textarea id="personale_facchini" name="personale_facchini" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="personale_altro">Altro Personale</label>
+                        <textarea id="personale_altro" name="personale_altro" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Richieste -->
+                <div class="form-section">
+                    <h3>Richieste</h3>
+                    
+                    <div class="form-group">
+                        <label for="richieste_permessi">Permessi Richiesti</label>
+                        <textarea id="richieste_permessi" name="richieste_permessi" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="richieste_certificazioni">Certificazioni Richieste</label>
+                        <textarea id="richieste_certificazioni" name="richieste_certificazioni" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="richieste_vestiario">Vestiario Richiesto</label>
+                        <textarea id="richieste_vestiario" name="richieste_vestiario" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Allestimento -->
+                <div class="form-section">
+                    <h3>Allestimento</h3>
+                    
+                    <div class="form-group">
+                        <label for="allestimento_rivestimento_palco">Rivestimento Palco</label>
+                        <textarea id="allestimento_rivestimento_palco" name="allestimento_rivestimento_palco" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="allestimento_tamponatura_perimetrale">Tamponatura Perimetrale</label>
+                        <textarea id="allestimento_tamponatura_perimetrale" name="allestimento_tamponatura_perimetrale" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="allestimento_totem_quinta">Totem/Quinta</label>
+                        <textarea id="allestimento_totem_quinta" name="allestimento_totem_quinta" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="allestimento_tamponatura_ledwall">Tamponatura LED Wall</label>
+                        <textarea id="allestimento_tamponatura_ledwall" name="allestimento_tamponatura_ledwall" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="allestimento_tamponatura_regia">Tamponatura Regia</label>
+                        <textarea id="allestimento_tamponatura_regia" name="allestimento_tamponatura_regia" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Note Aggiuntive -->
+                <div class="form-section">
+                    <h3>Note Aggiuntive</h3>
+                    
+                    <div class="form-group">
+                        <label for="altro">Altre Note</label>
+                        <textarea id="altro" name="altro" rows="4"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button">Salva</button>
+                    <button type="button" onclick="history.back()" class="button">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+<script type="module">
+    import { tipologieLavoroService } from '../../js/services/tipologieLavoroService.js';
+    import { sopralluogoService } from '../../js/services/sopralluogoService.js';
+    import { createShortcutButtons } from '../../js/components/schedaLavoro/ShortcutButtons.js';
+    import { anagraficheService } from '../../js/services/anagraficheService.js';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // Load tipi lavoro
+            const tipoSelect = document.getElementById('tipo_lavoro');
+            const result = await tipologieLavoroService.getTipologieAttive();
+            if (!result.success) throw new Error(result.error);
+
+            result.data.forEach(({ tipo }) => {
+                const option = document.createElement('option');
+                option.value = tipo;
+                switch (tipo) {
+                    case 'INTERNO':
+                        option.textContent = 'Lavoro Interno';
+                        break;
+                    case 'NOLEGGIO':
+                        option.textContent = 'Noleggio';
+                        break;
+                    case 'CONTOVISIONE':
+                        option.textContent = 'Contovisione';
+                        break;
+                    case 'ASSISTENZA':
+                        option.textContent = 'Assistenza Tecnica';
+                        break;
+                    case 'RESO_FORNITORE':
+                        option.textContent = 'Reso a Fornitore';
+                        break;
+                    default:
+                        option.textContent = tipo;
+                }
+                tipoSelect.appendChild(option);
+            });
+
+            // Setup tipo lavoro change handler
+            const produzioneField = document.querySelector('[data-field="produzione_id"]');
+            const clienteField = document.querySelector('[data-field="cliente_id"]');
+            const catField = document.querySelector('[data-field="cat_id"]');
+            const fornitoreField = document.querySelector('[data-field="fornitore_id"]');
+
+            tipoSelect.addEventListener('change', async (e) => {
+                // Hide all fields
+                [produzioneField, clienteField, catField, fornitoreField].forEach(field => {
+                    if (field) {
+                        field.style.display = 'none';
+                        const select = field.querySelector('select');
+                        if (select) select.required = false;
+                    }
+                });
+
+                // Show shortcut buttons
+                const tipo = e.target.value;
+                const shortcutContainer = document.getElementById('shortcutButtons');
+                if (shortcutContainer) {
+                    shortcutContainer.innerHTML = createShortcutButtons(tipo);
+                }
+
+                // Show appropriate field based on tipo
+                switch (tipo) {
+                    case 'INTERNO':
+                        if (produzioneField) {
+                            produzioneField.style.display = 'block';
+                            const select = produzioneField.querySelector('select');
+                            if (select) {
+                                select.required = true;
+                                await loadProduzioni(select);
+                            }
+                        }
+                        break;
+                    case 'NOLEGGIO':
+                    case 'CONTOVISIONE':
+                        if (clienteField) {
+                            clienteField.style.display = 'block';
+                            const select = clienteField.querySelector('select');
+                            if (select) {
+                                select.required = true;
+                                await loadClienti(select);
+                            }
+                        }
+                        break;
+                    case 'ASSISTENZA':
+                        if (catField) {
+                            catField.style.display = 'block';
+                            const select = catField.querySelector('select');
+                            if (select) {
+                                select.required = true;
+                                await loadCAT(select);
+                            }
+                        }
+                        break;
+                    case 'RESO_FORNITORE':
+                        if (fornitoreField) {
+                            fornitoreField.style.display = 'block';
+                            const select = fornitoreField.querySelector('select');
+                            if (select) {
+                                select.required = true;
+                                await loadFornitori(select);
+                            }
+                        }
+                        break;
+                }
+            });
+
+            // Handle form submission
+            document.getElementById('sopralluogoForm').onsubmit = async (e) => {
+                e.preventDefault();
+                
+                if (!confirm('Sei sicuro di voler salvare il sopralluogo?')) {
+                    return;
+                }
+
+                try {
+                    const formData = new FormData(e.target);
+                    const result = await sopralluogoService.createSopralluogo(
+                        Object.fromEntries(formData)
+                    );
+
+                    if (result.success) {
+                        alert('Sopralluogo creato con successo!');
+                        window.location.href = 'lista.html';
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert('Errore durante il salvataggio: ' + error.message);
+                }
+            };
+
+        } catch (error) {
+            console.error('Errore durante l\'inizializzazione:', error);
+            alert('Errore durante l\'inizializzazione del form: ' + error.message);
+        }
+    });
+
+    // Helper functions to load reference data
+    async function loadProduzioni(select) {
+        try {
+            const result = await anagraficheService.getProduzioni();
+            if (result.success) {
+                select.innerHTML = '<option value="">Seleziona produzione</option>';
+                result.data.forEach(prod => {
+                    if (prod.attivo) {
+                        const option = document.createElement('option');
+                        option.value = prod.id;
+                        option.textContent = prod.nome;
+                        select.appendChild(option);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Errore caricamento produzioni:', error);
+        }
+    }
+
+    async function loadClienti(select) {
+        try {
+            const result = await anagraficheService.getClienti();
+            if (result.success) {
+                select.innerHTML = '<option value="">Seleziona cliente</option>';
+                result.data.forEach(cliente => {
+                    if (cliente.attivo) {
+                        const option = document.createElement('option');
+                        option.value = cliente.id;
+                        option.textContent = cliente.ragione_sociale;
+                        select.appendChild(option);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Errore caricamento clienti:', error);
+        }
+    }
+
+    async function loadCAT(select) {
+        try {
+            const result = await anagraficheService.getCAT();
+            if (result.success) {
+                select.innerHTML = '<option value="">Seleziona CAT</option>';
+                result.data.forEach(cat => {
+                    if (cat.attivo) {
+                        const option = document.createElement('option');
+                        option.value = cat.id;
+                        option.textContent = `${cat.nome} ${cat.cognome}`;
+                        select.appendChild(option);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Errore caricamento CAT:', error);
+        }
+    }
+
+    async function loadFornitori(select) {
+        try {
+            const result = await anagraficheService.getFornitori();
+            if (result.success) {
+                select.innerHTML = '<option value="">Seleziona fornitore</option>';
+                result.data.forEach(fornitore => {
+                    if (fornitore.attivo) {
+                        const option = document.createElement('option');
+                        option.value = fornitore.id;
+                        option.textContent = fornitore.ragione_sociale;
+                                                select.appendChild(option);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Errore caricamento fornitori:', error);
+        }
+    }
+</script>
+
+<style>
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 2rem;
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-section h3 {
+        margin-bottom: 1.5rem;
+        color: var(--text-color);
+        font-size: 1.25rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--accent-color);
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+            gap: 0;
+        }
+    }
+
+    .required-field::after {
+        content: "*";
+        color: #ef4444;
+        margin-left: 0.25rem;
+    }
+
+    .tipo-lavoro-container {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .tipo-lavoro-container select {
+        flex: 1;
+    }
+
+    .shortcut-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .shortcut-buttons .button {
+        white-space: nowrap;
+    }
+</style>
+</body>
+</html>

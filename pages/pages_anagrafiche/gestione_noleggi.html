@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Gestione Noleggi</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/table.css">
+    <link rel="stylesheet" href="../../css/modal.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="../../index.html">Home</a></li>
+                <li><a href="../../schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="../../giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="../../pages/workspace/schede/liste-aperte.html">Workspace</a></li>
+                <li><a href="../../impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Gestione Richieste Noleggio</h2>
+        <p class="section-description">Gestione delle richieste di noleggio a fornitori</p>
+
+        <div class="actions-container" style="margin: 2rem 0; display: flex; gap: 1rem;">
+            <button onclick="window.nuovaRichiesta()" class="button">
+                Nuova Richiesta
+            </button>
+            <button onclick="history.back()" class="button">
+                Torna Indietro
+            </button>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator">Caricamento in corso...</div>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Data</th>
+                        <th>Fornitore</th>
+                        <th>Articoli</th>
+                        <th>Stato</th>
+                        <th>Note</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="richiesteTable">
+                    <!-- La tabella verrà popolata dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { richiesteNoleggioService } from '../../js/services/richiesteNoleggioService.js';
+
+        async function loadRichieste() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableBody = document.getElementById('richiesteTable');
+            
+            try {
+                const result = await richiesteNoleggioService.getRichieste();
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="no-data">
+                                Nessuna richiesta di noleggio trovata
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = result.data.map(richiesta => `
+                    <tr>
+                        <td>${richiesta.codice}</td>
+                        <td>${new Date(richiesta.data_richiesta).toLocaleDateString()}</td>
+                        <td>${richiesta.fornitore?.ragione_sociale || '-'}</td>
+                        <td>${richiesta.articoli?.length || 0}</td>
+                        <td class="status-${richiesta.stato.toLowerCase()}">${richiesta.stato}</td>
+                        <td>${richiesta.note || '-'}</td>
+                        <td>
+                            <button onclick="window.visualizzaRichiesta('${richiesta.id}')" class="button">
+                                Visualizza
+                            </button>
+                            ${richiesta.stato === 'BOZZA' ? `
+                                <button onclick="window.modificaRichiesta('${richiesta.id}')" class="button">
+                                    Modifica
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (error) {
+                console.error('Errore durante il caricamento:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="error-message">
+                            ${error.message || 'Errore durante il caricamento delle richieste'}
+                        </td>
+                    </tr>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        window.nuovaRichiesta = () => {
+            window.location.href = 'nuova-richiesta-noleggio.html';
+        };
+
+        window.visualizzaRichiesta = (id) => {
+            window.location.href = `visualizza-richiesta-noleggio.html?id=${id}`;
+        };
+
+        window.modificaRichiesta = (id) => {
+            window.location.href = `modifica-richiesta-noleggio.html?id=${id}`;
+        };
+
+        document.addEventListener('DOMContentLoaded', loadRichieste);
+    </script>
+
+    <style>
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .status-bozza { color: #f59e0b; }
+        .status-inviata { color: #3b82f6; }
+        .status-confermata { color: #10b981; }
+        .status-annullata { color: #ef4444; }
+
+        .error-message {
+            color: #ef4444;
+            text-align: center;
+        }
+    </style>
+</body>
+</html>
