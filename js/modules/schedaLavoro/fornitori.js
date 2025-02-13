@@ -2,7 +2,7 @@ import { anagraficheService } from '../../services/anagraficheService.js';
 
 export async function loadFornitori(select) {
     if (!select) return;
-    
+
     try {
         const result = await anagraficheService.getFornitori();
         if (!result.success) throw new Error(result.error);

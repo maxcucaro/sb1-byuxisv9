@@ -72,6 +72,13 @@ export const SETTORI = {
             'COVERTER RETE'
         ]
     },
+    NETWORK: {
+        nome: 'Network',
+        categorie: [
+            'ROUTER'
+                    ]
+    },
+    
     ALLESTIMENTO: {
         nome: 'Allestimento',
         categorie: [

@@ -14,11 +14,35 @@ class ImballiService {
         }, 'recupero imballi');
     }
 
+    async getNextCode() {
+        const { data, error } = await supabase
+            .from('imballi')
+            .select('codice')
+            .like('codice', 'IB-%')
+            .order('codice', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            return 'IB-0001';
+        }
+
+        const lastCode = data[0].codice;
+        const lastNumber = parseInt(lastCode.split('-')[1]);
+        return `IB-${String(lastNumber + 1).padStart(4, '0')}`;
+    }
+
     async addImballo(formData) {
         return handleError(async () => {
+            const codice = await this.getNextCode();
+            
             const { data, error } = await supabase
                 .from('imballi')
-                .insert([formData])
+                .insert([{
+                    ...formData,
+                    codice
+                }])
                 .select();
 
             if (error) throw error;
@@ -50,6 +74,18 @@ class ImballiService {
             if (error) throw error;
             return { success: true, data };
         }, 'modifica stato imballo');
+    }
+
+    async deleteImballo(id) {
+        return handleError(async () => {
+            const { error } = await supabase
+                .from('imballi')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return { success: true };
+        }, 'eliminazione imballo');
     }
 }
 

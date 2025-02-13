@@ -18,5 +18,16 @@ export const SETTORI = {
   STRUTTURE: {
     nome: 'Strutture',
     categorie: ['AMERICANA', 'TORRI', 'STAGE', 'ACCESSORI']
-  }
-};
+  },
+SEGNALI: {
+        nome: 'Segnali',
+        categorie: [
+            'ROUTER / SWITCH / CAVI DI RETE',
+            'CAVI RETE',
+            'COVERTER RETE']
+},
+    NETWORK: {
+        nome: 'Network',
+        categorie: [
+            'ROUTER']
+ } }

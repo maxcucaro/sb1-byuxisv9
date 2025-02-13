@@ -1,109 +1,94 @@
-import { supabase } from '../utils/supabaseClient.js';
+import { supabaseInstance } from '../utils/supabaseClient.js';
+import { handleError } from '../utils/errorHandling.js';
 
 class MaterialiRichiestiService {
     async getMaterialiRichiesti(schedaId) {
-        try {
+        return handleError(async () => {
             if (!schedaId) {
-                throw new Error('ID scheda non valido');
+                return { success: true, data: [] };
             }
 
-            // Get all requested materials with full details
-            const { data, error } = await supabase
-                .from('materiali_richiesti')
-                .select(`
-                    id,
-                    scheda_id,
-                    settore,
-                    articolo_cod,
-                    quantita,
-                    note,
-                    stato,
-                    quantita_preparata,
-                    note_preparazione
-                `)
-                .eq('scheda_id', schedaId)
-                .order('created_at');
+            const { data: materiali, error } = await supabaseInstance.retryOperation(async (supabase) => {
+                return await supabase
+                    .from('materiali_richiesti')
+                    .select(`
+                        id,
+                        scheda_id,
+                        settore,
+                        articolo_cod,
+                        quantita,
+                        note,
+                        stato,
+                        quantita_preparata,
+                        note_preparazione
+                    `)
+                    .eq('scheda_id', schedaId)
+                    .order('settore', { ascending: true })
+                    .order('articolo_cod', { ascending: true });
+            });
 
             if (error) throw error;
 
-            // Log for debugging
-            console.log('Materiali richiesti trovati:', data);
-            
-            return { success: true, data: data || [] };
-        } catch (error) {
-            console.error('Errore durante il recupero materiali:', error);
-            return { success: false, error: error.message };
-        }
+            const materialiCompleti = await Promise.all((materiali || []).map(async (materiale) => {
+                try {
+                    const settore = materiale.settore.toLowerCase();
+                    const { data: articolo } = await supabaseInstance.retryOperation(async (supabase) => {
+                        return await supabase
+                            .from('articoli_' + settore)
+                            .select('descrizione, categoria')
+                            .eq('cod', materiale.articolo_cod)
+                            .maybeSingle();
+                    });
+
+                    return {
+                        ...materiale,
+                        descrizione: articolo?.descrizione || 'Non trovato',
+                        categoria: articolo?.categoria || '-'
+                    };
+                } catch (error) {
+                    console.error(`Errore recupero articolo ${materiale.articolo_cod}:`, error);
+                    return {
+                        ...materiale,
+                        descrizione: 'Errore recupero dati',
+                        categoria: '-'
+                    };
+                }
+            }));
+
+            return { success: true, data: materialiCompleti || [] };
+        }, 'recupero materiali richiesti');
     }
 
-    async addRichiestaMateriali(schedaId, materiali) {
-        try {
-            if (!schedaId) {
-                throw new Error('ID scheda non valido');
+    async updateRichiestaMateriali(schedaId, materiali) {
+        return handleError(async () => {
+            if (!schedaId || !materiali?.length) {
+                throw new Error('Dati richiesta non validi');
             }
 
-            if (!materiali?.length) {
-                throw new Error('Nessun materiale da salvare');
-            }
-
-            // Delete existing materiali if any
-            await supabase
-                .from('materiali_richiesti')
-                .delete()
-                .eq('scheda_id', schedaId);
-
-            // Insert new materiali
-            const { data, error } = await supabase
-                .from('materiali_richiesti')
-                .insert(materiali.map(m => ({
-                    scheda_id: schedaId,
+            // Validate materials data
+            const validatedMaterials = materiali.map(m => {
+                if (!m.settore || !m.cod || !m.quantita) {
+                    throw new Error('Dati materiale incompleti');
+                }
+                return {
                     settore: m.settore,
                     articolo_cod: m.cod,
-                    quantita: m.quantita,
-                    note: m.note || '',
+                    quantita: parseInt(m.quantita),
+                    note: m.note || null,
                     stato: 'RICHIESTO'
-                })))
-                .select();
+                };
+            });
+
+            const { error } = await supabaseInstance.retryOperation(async (supabase) => {
+                return await supabase.rpc('aggiorna_materiali_richiesti', {
+                    p_scheda_id: schedaId,
+                    p_materiali: validatedMaterials
+                });
+            });
 
             if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('Errore durante il salvataggio materiali:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async updatePreparazione(schedaId, materiali) {
-        try {
-            if (!schedaId) {
-                throw new Error('ID scheda non valido');
-            }
-
-            if (!materiali?.length) {
-                throw new Error('Nessun materiale da salvare');
-            }
-
-            // Update materiali with prepared quantities
-            const { data, error } = await supabase
-                .from('materiali_richiesti')
-                .upsert(materiali.map(m => ({
-                    scheda_id: schedaId,
-                    settore: m.settore,
-                    articolo_cod: m.articolo_cod,
-                    quantita_preparata: m.quantita,
-                    note_preparazione: m.note || '',
-                    stato: 'PREPARATO'
-                })), {
-                    onConflict: ['scheda_id', 'settore', 'articolo_cod']
-                })
-                .select();
-
-            if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('Errore durante il salvataggio preparazione:', error);
-            return { success: false, error: error.message };
-        }
+            return await this.getMaterialiRichiesti(schedaId);
+        }, 'aggiornamento richiesta materiali');
     }
 }
 

@@ -2,6 +2,19 @@ import { supabase } from '../utils/supabaseClient.js';
 import { handleError } from '../utils/errorHandling.js';
 
 class TipologieLavoroService {
+    async getTipologieAttive() {
+        return handleError(async () => {
+            const { data, error } = await supabase
+                .from('tipologie_lavoro')
+                .select('tipo')
+                .eq('attivo', true)
+                .order('tipo');
+
+            if (error) throw error;
+            return { success: true, data };
+        }, 'recupero tipologie attive');
+    }
+
     async getConfigurazioneTipologia(tipo) {
         return handleError(async () => {
             const { data, error } = await supabase
@@ -58,19 +71,6 @@ class TipologieLavoroService {
             if (result.error) throw result.error;
             return { success: true, data: result.data[0] };
         }, 'aggiornamento configurazione tipologia');
-    }
-
-    async getTipologieAttive() {
-        return handleError(async () => {
-            const { data, error } = await supabase
-                .from('tipologie_lavoro')
-                .select('tipo')
-                .eq('attivo', true)
-                .order('tipo');
-
-            if (error) throw error;
-            return { success: true, data };
-        }, 'recupero tipologie attive');
     }
 }
 

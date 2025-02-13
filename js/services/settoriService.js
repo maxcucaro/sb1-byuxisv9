@@ -15,23 +15,30 @@ class SettoriService {
         }, 'recupero settori e categorie');
     }
 
-    async addCategoria(settore, categoria, attivo = true) {
+    async getCategorieBySettore(settore) {
         return handleError(async () => {
-            // Verifica se la categoria esiste già
-            const { data: existing } = await supabase
-                .from('settori_categorie')
-                .select('*')
-                .eq('settore', settore)
-                .eq('categoria', categoria)
-                .maybeSingle();
-
-            if (existing) {
-                throw new Error('Questa categoria esiste già per il settore selezionato');
-            }
+            if (!settore) throw new Error('Settore non specificato');
 
             const { data, error } = await supabase
                 .from('settori_categorie')
-                .insert([{ settore, categoria, attivo }])
+                .select('*')
+                .eq('settore', settore.toUpperCase())
+                .order('categoria');
+
+            if (error) throw error;
+            return { success: true, data };
+        }, 'recupero categorie per settore');
+    }
+
+    async addCategoria(settore, categoria, attivo = true) {
+        return handleError(async () => {
+            const { data, error } = await supabase
+                .from('settori_categorie')
+                .insert([{
+                    settore: settore.toUpperCase(),
+                    categoria,
+                    attivo
+                }])
                 .select();
 
             if (error) throw error;
@@ -39,32 +46,11 @@ class SettoriService {
         }, 'aggiunta categoria');
     }
 
-    async updateCategoria(id, nuovoNome) {
+    async updateCategoria(id, categoria) {
         return handleError(async () => {
-            // Verifica se il nuovo nome esiste già
-            const { data: categoria } = await supabase
-                .from('settori_categorie')
-                .select('settore')
-                .eq('id', id)
-                .single();
-
-            if (!categoria) throw new Error('Categoria non trovata');
-
-            const { data: existing } = await supabase
-                .from('settori_categorie')
-                .select('*')
-                .eq('settore', categoria.settore)
-                .eq('categoria', nuovoNome)
-                .neq('id', id)
-                .maybeSingle();
-
-            if (existing) {
-                throw new Error('Esiste già una categoria con questo nome nel settore');
-            }
-
             const { data, error } = await supabase
                 .from('settori_categorie')
-                .update({ categoria: nuovoNome })
+                .update({ categoria })
                 .eq('id', id)
                 .select();
 
@@ -73,7 +59,7 @@ class SettoriService {
         }, 'aggiornamento categoria');
     }
 
-    async toggleCategoriaStato(id, nuovoStato) {
+    async toggleStatoCategoria(id, nuovoStato) {
         return handleError(async () => {
             const { data, error } = await supabase
                 .from('settori_categorie')
@@ -84,6 +70,19 @@ class SettoriService {
             if (error) throw error;
             return { success: true, data };
         }, 'modifica stato categoria');
+    }
+
+    async getCategoriaById(id) {
+        return handleError(async () => {
+            const { data, error } = await supabase
+                .from('settori_categorie')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            return { success: true, data };
+        }, 'recupero categoria per id');
     }
 }
 

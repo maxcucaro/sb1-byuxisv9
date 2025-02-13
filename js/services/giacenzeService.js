@@ -1,109 +1,154 @@
-import { supabase } from '../utils/supabaseClient.js';
+import { supabaseInstance } from '../utils/supabaseClient.js';
+import { handleError } from '../utils/errorHandling.js';
 
-export class GiacenzeService {
+class GiacenzeService {
     async getGiacenzeArticolo(settore, articoloCod, dataInizio) {
-        try {
+        return handleError(async () => {
             if (!settore || !articoloCod || !dataInizio) {
-                throw new Error('Parametri mancanti per il calcolo delle giacenze');
+                return { 
+                    success: true, 
+                    data: {
+                        giacenza_attuale: 0,
+                        giacenza_prevista: 0,
+                        impegni_futuri: []
+                    }
+                };
             }
 
-            // Get current inventory
-            const { data: giacenzaAttuale, error: errorAttuale } = await supabase
-                .rpc('get_giacenza_attuale', {
-                    _settore: settore,
-                    _articolo_cod: articoloCod
-                });
+            try {
+                const [giacenzaAttuale, impegniFuturi, kitInfo] = await Promise.all([
+                    this.getGiacenzaAttuale(settore, articoloCod),
+                    this.getImpegniFuturi(settore, articoloCod, dataInizio),
+                    this.getKitInfo(settore, articoloCod)
+                ]);
 
-            if (errorAttuale) throw errorAttuale;
-
-            // Get predicted inventory at start date
-            const { data: giacenzaPrevista, error: errorPrevista } = await supabase
-                .rpc('get_giacenza_data', {
-                    _settore: settore,
-                    _articolo_cod: articoloCod,
-                    _data: dataInizio
-                });
-
-            if (errorPrevista) throw errorPrevista;
-
-            // Get future commitments with complete scheda details
-            const { data: impegniFuturi, error: errorImpegni } = await supabase
-                .from('materiali_richiesti')
-                .select(`
-                    quantita,
-                    schede_lavoro (
-                        codice,
-                        nome,
-                        tipo_lavoro,
-                        data_inizio,
-                        data_fine,
-                        stato,
-                        produzione:produzioni(nome),
-                        cliente:clienti(ragione_sociale),
-                        cat:cat(nome, cognome),
-                        fornitore:fornitori(ragione_sociale)
-                    )
-                `)
-                .eq('settore', settore)
-                .eq('articolo_cod', articoloCod)
-                .gte('schede_lavoro.data_inizio', dataInizio)
-                .neq('schede_lavoro.stato', 'BOZZA')
-                .neq('schede_lavoro.stato', 'ANNULLATA');
-
-            if (errorImpegni) throw errorImpegni;
-
-            // Format the response with additional details
-            const impegni = impegniFuturi?.map(imp => {
-                const scheda = imp.schede_lavoro;
-                let riferimento = '-';
-                
-                // Determine reference based on tipo_lavoro
-                switch (scheda.tipo_lavoro) {
-                    case 'INTERNO':
-                        riferimento = scheda.produzione?.nome;
-                        break;
-                    case 'NOLEGGIO':
-                    case 'CONTOVISIONE':
-                        riferimento = scheda.cliente?.ragione_sociale;
-                        break;
-                    case 'ASSISTENZA':
-                        riferimento = scheda.cat ? `${scheda.cat.nome} ${scheda.cat.cognome}` : null;
-                        break;
-                    case 'RESO_FORNITORE':
-                        riferimento = scheda.fornitore?.ragione_sociale;
-                        break;
+                // Calcola la quantità impegnata nei kit
+                let quantitaInKit = 0;
+                if (kitInfo.isComponente) {
+                    quantitaInKit = kitInfo.kits.reduce((sum, kit) => {
+                        // Moltiplica la quantità del componente per la quantità del kit
+                        return sum + (kit.quantita * kit.quantita_kit);
+                    }, 0);
                 }
 
-                return {
-                    codice_scheda: scheda.codice,
-                    nome_scheda: scheda.nome,
-                    tipo_lavoro: scheda.tipo_lavoro,
-                    riferimento: riferimento || '-',
-                    data_inizio: scheda.data_inizio,
-                    data_fine: scheda.data_fine,
-                    quantita: imp.quantita,
-                    stato: scheda.stato
+                // Calcola la quantità totale impegnata
+                const totaleImpegni = impegniFuturi.reduce((sum, imp) => sum + imp.quantita, 0);
+                
+                // La giacenza prevista è la giacenza attuale meno gli impegni e la quantità in kit
+                const giacenzaPrevista = giacenzaAttuale - totaleImpegni - quantitaInKit;
+
+                return { 
+                    success: true, 
+                    data: {
+                        giacenza_attuale: giacenzaAttuale,
+                        giacenza_prevista: giacenzaPrevista,
+                        impegni_futuri: impegniFuturi,
+                        quantita_in_kit: quantitaInKit
+                    }
                 };
-            }) || [];
+            } catch (error) {
+                console.error(`Errore calcolo giacenze per ${articoloCod}:`, error);
+                return { 
+                    success: true, 
+                    data: {
+                        giacenza_attuale: 0,
+                        giacenza_prevista: 0,
+                        impegni_futuri: [],
+                        quantita_in_kit: 0
+                    }
+                };
+            }
+        }, `calcolo giacenze per ${settore}-${articoloCod}`);
+    }
+
+    async getGiacenzaAttuale(settore, articoloCod) {
+        try {
+            const { data } = await supabaseInstance.retryOperation(
+                async (supabase) => {
+                    return await supabase
+                        .from(`articoli_${settore.toLowerCase()}`)
+                        .select('quantita')
+                        .eq('cod', articoloCod)
+                        .maybeSingle();
+                },
+                `recupero giacenza ${settore}-${articoloCod}`
+            );
+            return data?.quantita || 0;
+        } catch (error) {
+            console.error(`Errore recupero giacenza per ${articoloCod}:`, error);
+            return 0;
+        }
+    }
+
+    async getImpegniFuturi(settore, articoloCod, dataInizio) {
+        try {
+            const { data } = await supabaseInstance.retryOperation(
+                async (supabase) => {
+                    return await supabase
+                        .from('materiali_richiesti')
+                        .select(`
+                            quantita,
+                            schede_lavoro!inner(*)
+                        `)
+                        .eq('settore', settore)
+                        .eq('articolo_cod', articoloCod)
+                        .gte('schede_lavoro.data_inizio', dataInizio)
+                        .neq('schede_lavoro.stato', 'BOZZA')
+                        .neq('schede_lavoro.stato', 'ANNULLATA');
+                },
+                `recupero impegni ${settore}-${articoloCod}`
+            );
+            return data || [];
+        } catch (error) {
+            console.error(`Errore recupero impegni per ${articoloCod}:`, error);
+            return [];
+        }
+    }
+
+    async getKitInfo(settore, articoloCod) {
+        try {
+            // Verifica se l'articolo è un kit
+            const { data: kitArticolo } = await supabaseInstance.retryOperation(
+                async (supabase) => {
+                    return await supabase
+                        .from('kit_articoli')
+                        .select('quantita_kit')
+                        .eq('settore', settore)
+                        .eq('articolo_cod', articoloCod)
+                        .maybeSingle();
+                }
+            );
+
+            // Verifica se l'articolo è un componente di kit
+            const { data: kitComponenti } = await supabaseInstance.retryOperation(
+                async (supabase) => {
+                    return await supabase
+                        .from('kit_componenti')
+                        .select(`
+                            quantita,
+                            kit_articoli!inner(
+                                quantita_kit
+                            )
+                        `)
+                        .eq('componente_settore', settore)
+                        .eq('componente_cod', articoloCod);
+                }
+            );
 
             return {
-                success: true,
-                data: {
-                    giacenza_attuale: giacenzaAttuale || 0,
-                    giacenza_prevista: giacenzaPrevista || 0,
-                    impegni_futuri: impegni
-                }
+                isKit: !!kitArticolo,
+                isComponente: kitComponenti?.length > 0,
+                quantita_kit: kitArticolo?.quantita_kit || 0,
+                kits: kitComponenti || []
             };
+
         } catch (error) {
-            console.error('Errore durante il recupero giacenze:', error);
-            return { 
-                success: false, 
-                error: error.message || 'Errore durante il recupero delle giacenze',
-                data: {
-                    giacenza_attuale: 0,
-                    giacenza_prevista: 0,
-                    impegni_futuri: []
-                }
+            console.error(`Errore recupero info kit per ${articoloCod}:`, error);
+            return {
+                isKit: false,
+                isComponente: false,
+                quantita_kit: 0,
+                kits: []
             };
         }
     }

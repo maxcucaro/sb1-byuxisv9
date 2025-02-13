@@ -6,11 +6,6 @@ export function createImballoModal() {
                 <h3>Gestione Imballo</h3>
                 <form id="imballoForm">
                     <div class="form-group">
-                        <label for="codice">Codice*</label>
-                        <input type="text" id="codice" name="codice" required 
-                               placeholder="Inserisci il codice dell'imballo">
-                    </div>
-                    <div class="form-group">
                         <label for="descrizione">Descrizione*</label>
                         <input type="text" id="descrizione" name="descrizione" required 
                                placeholder="Inserisci la descrizione">
@@ -43,12 +38,34 @@ export function createImballoModal() {
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="button">Salva</button>
-                        <button type="button" class="button" onclick="document.getElementById('imballoModal').style.display='none'">Annulla</button>
+                        <button type="button" onclick="document.getElementById('imballoModal').style.display='none'" class="button">Annulla</button>
                     </div>
                 </form>
             </div>
         </div>
     `;
 
+    // Rimuovi il modale esistente se presente
+    const existingModal = document.getElementById('imballoModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Aggiungi il nuovo modale al body
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Inizializza gli event handler del modale
+    const modal = document.getElementById('imballoModal');
+    const closeBtn = modal.querySelector('.close-modal');
+    const form = modal.querySelector('#imballoForm');
+
+    // Handler per chiusura modale
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    return modal;
 }

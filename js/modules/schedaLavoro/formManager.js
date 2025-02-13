@@ -5,6 +5,7 @@ import { loadFornitori } from './fornitori.js';
 import { loadProduzioni } from './produzioni.js';
 import { loadTeamMembers } from './team.js';
 import { showFormField, hideFormField } from '../../utils/formUtils.js';
+import { supabaseInstance } from '../../utils/supabaseClient.js';
 
 export const WORK_TYPES = {
     'INTERNO': { 
@@ -33,12 +34,18 @@ export class FormManager {
     constructor(form) {
         if (!form) throw new Error('Form element is required');
         this.form = form;
-        this.setupTipoLavoroHandler();
+        this.setupEventHandlers();
     }
 
     async init() {
         try {
-            // Load all required data
+            // Ensure Supabase is connected first
+            const connected = await supabaseInstance.init();
+            if (!connected) {
+                throw new Error('Impossibile connettersi al database');
+            }
+
+            // Load all required data in parallel
             await Promise.all([
                 this.loadTipiLavoro(),
                 this.loadReferenceData()
@@ -55,22 +62,26 @@ export class FormManager {
     async loadTipiLavoro() {
         const tipoSelect = this.form.tipo_lavoro;
         if (!tipoSelect) {
-            throw new Error('Tipo lavoro select not found');
+            throw new Error('Campo tipo lavoro non trovato');
         }
         return loadTipiLavoro(tipoSelect);
     }
 
     async loadReferenceData() {
-        return Promise.all([
-            loadProduzioni(this.form.produzione_id),
-            loadClienti(this.form.cliente_id),
-            loadCAT(this.form.cat_id),
-            loadFornitori(this.form.fornitore_id),
-            loadTeamMembers(this.form.responsabile_id)
-        ]);
+        try {
+            await Promise.all([
+                loadProduzioni(this.form.produzione_id),
+                loadClienti(this.form.cliente_id),
+                loadCAT(this.form.cat_id),
+                loadFornitori(this.form.fornitore_id),
+                loadTeamMembers(this.form.responsabile_id)
+            ]);
+        } catch (error) {
+            throw new Error(`Errore caricamento dati di riferimento: ${error.message}`);
+        }
     }
 
-    setupTipoLavoroHandler() {
+    setupEventHandlers() {
         const tipoSelect = this.form.tipo_lavoro;
         if (tipoSelect) {
             tipoSelect.addEventListener('change', () => this.handleTipoLavoroChange(tipoSelect.value));

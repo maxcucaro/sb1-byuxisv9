@@ -15,6 +15,19 @@ class TeamService {
         }, 'recupero team');
     }
 
+    async getDipendenteById(id) {
+        return handleError(async () => {
+            const { data, error } = await supabase
+                .from('team')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            return { success: true, data };
+        }, 'recupero dipendente');
+    }
+
     async addDipendente(formData) {
         return handleError(async () => {
             const { data, error } = await supabase
@@ -40,6 +53,19 @@ class TeamService {
         }, 'aggiornamento dipendente');
     }
 
+    async updateRuolo(id, formData) {
+        return handleError(async () => {
+            const { data, error } = await supabase
+                .from('team')
+                .update({ ruolo: formData.ruolo })
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return { success: true, data };
+        }, 'aggiornamento ruolo');
+    }
+
     async toggleStatoDipendente(id, nuovoStato) {
         return handleError(async () => {
             const { data, error } = await supabase
@@ -53,17 +79,29 @@ class TeamService {
         }, 'modifica stato dipendente');
     }
 
-    async createRuolo(formData) {
+    async deleteDipendente(id) {
+        return handleError(async () => {
+            const { error } = await supabase
+                .from('team')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return { success: true };
+        }, 'eliminazione dipendente');
+    }
+
+    async createRuolo(form) {
         return handleError(async () => {
             const permessi = Array.from(
-                document.querySelectorAll('input[name="permessi"]:checked')
+                form.querySelectorAll('input[name="permessi"]:checked')
             ).map(cb => cb.value);
 
             const { data, error } = await supabase
                 .from('ruoli')
                 .insert([{
-                    nome: formData.nome_ruolo,
-                    descrizione: formData.descrizione_ruolo,
+                    nome: form.nome_ruolo.value,
+                    descrizione: form.descrizione_ruolo.value,
                     permessi: permessi,
                     attivo: true
                 }])

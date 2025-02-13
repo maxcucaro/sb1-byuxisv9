@@ -1,8 +1,9 @@
 export class DatabaseError extends Error {
-    constructor(message, operation) {
+    constructor(message, operation, retryable = true) {
         super(message);
         this.name = 'DatabaseError';
         this.operation = operation;
+        this.retryable = retryable;
     }
 }
 
@@ -12,30 +13,44 @@ export async function handleError(operation, operationName) {
     } catch (error) {
         console.error(`Errore durante ${operationName}:`, error);
         
+        // Gestione errori di connessione
+        if (error.message === 'Failed to fetch' || error.message === 'Timeout connessione') {
+            throw new DatabaseError(
+                'Errore di connessione al database. Riprova tra qualche istante.',
+                operationName,
+                true
+            );
+        }
+        
         // Gestione errori specifici
         if (error.code === 'PGRST301') {
-            throw new DatabaseError('Risorsa non trovata', operationName);
+            throw new DatabaseError('Risorsa non trovata', operationName, false);
         }
         
         if (error.code === 'PGRST204') {
-            throw new DatabaseError('Errore di validazione dati', operationName);
+            throw new DatabaseError('Errore di validazione dati', operationName, false);
         }
 
         throw new DatabaseError(
             error.message || `Errore durante ${operationName}`,
-            operationName
+            operationName,
+            error instanceof DatabaseError ? error.retryable : true
         );
     }
 }
 
 export function displayError(error, container) {
+    const message = error instanceof DatabaseError ?
+        `Errore durante ${error.operation}: ${error.message}${error.retryable ? '\nRiprova tra qualche istante.' : ''}` :
+        error.message || 'Si è verificato un errore imprevisto';
+
     if (container) {
         container.innerHTML = `
             <div class="error-message">
-                ${error.message || 'Si è verificato un errore imprevisto'}
+                ${message}
             </div>
         `;
     } else {
-        alert(error.message || 'Si è verificato un errore imprevisto');
+        alert(message);
     }
 }
