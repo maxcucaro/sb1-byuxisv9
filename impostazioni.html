@@ -6,6 +6,7 @@
     <title>EVENT TRACK - Impostazioni</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/anagrafiche.css">
+    <link rel="stylesheet" href="css/sidebar.css">
 </head>
 <body>
     <header class="header">
@@ -18,10 +19,10 @@
     <nav class="nav">
         <div class="nav-container">
             <ul>
-                <li><a href="index.html">Home</a></li>
+                <li><a href="home.html">Home</a></li>
                 <li><a href="schede-lavori.html">Schede Lavori</a></li>
                 <li><a href="giacenze.html">Giacenze Inventario</a></li>
-                <li><a href="workspace.html">Workspace</a></li>
+                <li><a href="pages/workspace/schede/liste-aperte.html">Workspace</a></li>
                 <li><a href="impostazioni.html" class="active">Impostazioni</a></li>
             </ul>
         </div>
@@ -53,6 +54,17 @@
                    • Specifiche tecniche
                 </p>
                 <a href="pages/pages_anagrafiche/gestione_articoli.html" class="button">Accedi</a>
+            </div>
+            
+            <!-- Gestione Kit -->
+            <div class="settings-card">
+                <h3>Gestione Kit</h3>
+                <p>Gestisci i kit di articoli<br><br>
+                   • Creazione kit<br>
+                   • Composizione<br>
+                   • Gestione componenti
+                </p>
+                <a href="pages/pages_anagrafiche/gestione_kit.html" class="button">Accedi</a>
             </div>
             
             <!-- Gestione Imballi -->
@@ -109,11 +121,64 @@
                 </p>
                 <a href="pages/pages_anagrafiche/gestione_team.html" class="button">Accedi</a>
             </div>
+
+            <!-- Richieste Noleggio -->
+            <div class="settings-card">
+                <h3>Richieste Noleggio</h3>
+                <p>Gestisci le richieste di noleggio<br><br>
+                   • Storico richieste<br>
+                   • Articoli noleggiati<br>
+                   • Fornitori
+                </p>
+                <a href="pages/pages_anagrafiche/gestione_noleggi.html" class="button">Accedi</a>
+            </div>
         </div>
     </main>
 
     <footer class="footer">
         <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
     </footer>
+
+    <script type="module">
+        import { Sidebar } from './js/components/Sidebar.js';
+
+        // Inizializza la sidebar
+        const sidebar = new Sidebar({
+            position: 'left',
+            theme: 'light',
+            width: '300px'
+        });
+
+        // Imposta il contenuto della sidebar
+        sidebar.setContent(`
+            <div class="sidebar-section">
+                <h3>Configurazione</h3>
+                <ul class="sidebar-menu">
+                    <li><a href="pages/profilo-aziendale.html">Profilo Aziendale</a></li>
+                    <li><a href="pages/pages_anagrafiche/gestione_team.html">Gestione Team</a></li>
+                    <li><a href="pages/pages_anagrafiche/gestione_settori_categorie.html">Settori e Categorie</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>Anagrafiche</h3>
+                <ul class="sidebar-menu">
+                    <li><a href="pages/pages_anagrafiche/gestione_articoli.html">Articoli</a></li>
+                    <li><a href="pages/pages_anagrafiche/gestione_kit.html">Kit</a></li>
+                    <li><a href="pages/pages_anagrafiche/gestione_imballi.html">Imballi</a></li>
+                    <li><a href="pages/pages_anagrafiche/gestione_mezzi.html">Mezzi</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Sistema</h3>
+                <ul class="sidebar-menu">
+                    <li><a href="pages/pages_anagrafiche/gestione_tipologie_lavoro.html">Tipologie Lavoro</a></li>
+                    <li><a href="#">Backup Dati</a></li>
+                    <li><a href="#">Log Sistema</a></li>
+                </ul>
+            </div>
+        `);
+    </script>
 </body>
 </html>

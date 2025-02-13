@@ -6,6 +6,7 @@
     <title>EVENT TRACK - Schede Lavori</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/anagrafiche.css">
+    <link rel="stylesheet" href="css/sidebar.css">
 </head>
 <body>
     <header class="header">
@@ -18,10 +19,11 @@
     <nav class="nav">
         <div class="nav-container">
             <ul>
-                <li><a href="index.html">Home</a></li>
+                <li><a href="home.html">Home</a></li>
+                <li><a href="sopralluogo.html">Sopralluogo</a></li>
                 <li><a href="schede-lavori.html" class="active">Schede Lavori</a></li>
                 <li><a href="giacenze.html">Giacenze Inventario</a></li>
-                <li><a href="workspace.html">Workspace</a></li>
+                <li><a href="pages/workspace/schede/liste-aperte.html">Workspace</a></li>
                 <li><a href="impostazioni.html">Impostazioni</a></li>
             </ul>
         </div>
@@ -96,5 +98,46 @@
     <footer class="footer">
         <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
     </footer>
+
+    <script type="module">
+        import { Sidebar } from './js/components/Sidebar.js';
+
+        // Inizializza la sidebar
+        const sidebar = new Sidebar({
+            position: 'left',
+            theme: 'light',
+            width: '300px'
+        });
+
+        // Imposta il contenuto della sidebar
+        sidebar.setContent(`
+            <div class="sidebar-section">
+                <h3>Strumenti Rapidi</h3>
+                <ul class="sidebar-menu">
+                    <li><a href="pages/schede/nuova-scheda.html">Nuova Scheda</a></li>
+                    <li><a href="pages/schede/visualizza-schede.html">Visualizza Tutte</a></li>
+                    <li><a href="pages/workspace/schede/liste-aperte.html">Liste Aperte</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>Statistiche</h3>
+                <ul class="sidebar-menu">
+                    <li><a href="#">Schede per Tipo</a></li>
+                    <li><a href="#">Schede per Stato</a></li>
+                    <li><a href="#">Report Mensile</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Utilità</h3>
+                <ul class="sidebar-menu">
+                    <li><a href="#">Esporta Schede</a></li>
+                    <li><a href="#">Stampa Report</a></li>
+                    <li><a href="#">Archivio</a></li>
+                </ul>
+            </div>
+        `);
+    </script>
 </body>
 </html>

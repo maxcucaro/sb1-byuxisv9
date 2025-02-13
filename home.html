@@ -6,7 +6,6 @@
     <title>EVENT TRACK - Control Stage</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/sidebar.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -59,28 +58,5 @@
     <footer class="footer">
         <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
     </footer>
-
-    <script type="module">
-        import { Sidebar } from './js/components/Sidebar.js';
-        
-        // Initialize sidebar
-        const sidebar = new Sidebar({
-            position: 'left',
-            theme: 'light',
-            width: '300px'
-        });
-
-        // Set sidebar content
-        sidebar.setContent(`
-            <div class="sidebar-section">
-                <h3>Menu Rapido</h3>
-                <ul class="sidebar-menu">
-                    <li><a href="./pages/auth/login.html">Accedi</a></li>
-                    <li><a href="./pages/auth/register.html">Registrati</a></li>
-                    <li><a href="./pages/workspace/schede/liste-aperte.html">Workspace</a></li>
-                </ul>
-            </div>
-        `);
-    </script>
 </body>
 </html>

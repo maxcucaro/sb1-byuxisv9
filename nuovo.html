@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT TRACK - Nuova Scheda</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>EVENT TRACK</h1>
+            <p class="tagline">Advanced Solution for Total Control</p>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-container">
+            <ul>
+                <li><a href="Home.html">Home</a></li>
+                <li><a href="schede-lavori.html">Schede Lavori</a></li>
+                <li><a href="giacenze.html">Giacenze Inventario</a></li>
+                <li><a href="impostazioni.html">Impostazioni</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2>Nuova Scheda</h2>
+        
+        <div class="form-container">
+            <form id="schedaForm">
+                <div class="form-group">
+                    <label for="nome">Nome Scheda*</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_lavoro">Tipo Lavoro*</label>
+                    <select id="tipo_lavoro" name="tipo_lavoro" required>
+                        <option value="">Seleziona tipo</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_inizio">Data Inizio*</label>
+                    <input type="date" id="data_inizio" name="data_inizio" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_fine">Data Fine*</label>
+                    <input type="date" id="data_fine" name="data_fine" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="luogo">Luogo*</label>
+                    <input type="text" id="luogo" name="luogo" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="note">Note</label>
+                    <textarea id="note" name="note" rows="4"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button">Salva</button>
+                    <button type="button" onclick="history.back()" class="button">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
+    </footer>
+
+    <script type="module">
+        import { tipologieLavoroService } from './js/services/tipologieLavoroService.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Carica i tipi di lavoro
+                const result = await tipologieLavoroService.getTipologieAttive();
+                if (!result.success) throw new Error(result.error);
+
+                const tipoSelect = document.getElementById('tipo_lavoro');
+                result.data.forEach(({ tipo }) => {
+                    const option = document.createElement('option');
+                    option.value = tipo;
+                    switch (tipo) {
+                        case 'INTERNO':
+                            option.textContent = 'Lavoro Interno';
+                            break;
+                        case 'NOLEGGIO':
+                            option.textContent = 'Noleggio';
+                            break;
+                        case 'CONTOVISIONE':
+                            option.textContent = 'Contovisione';
+                            break;
+                        case 'ASSISTENZA':
+                            option.textContent = 'Assistenza Tecnica';
+                            break;
+                        case 'RESO_FORNITORE':
+                            option.textContent = 'Reso a Fornitore';
+                            break;
+                        default:
+                            option.textContent = tipo;
+                    }
+                    tipoSelect.appendChild(option);
+                });
+
+                // Gestisci il submit del form
+                document.getElementById('schedaForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    console.log('Form data:', Object.fromEntries(formData));
+                    // TODO: Implementare il salvataggio
+                };
+
+            } catch (error) {
+                console.error('Errore durante l\'inizializzazione:', error);
+                alert('Errore durante l\'inizializzazione del form: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
