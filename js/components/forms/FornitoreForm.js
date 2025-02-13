@@ -7,7 +7,7 @@ export class FornitoreForm extends BaseForm {
 
     validate() {
         const formData = this.getFormData();
-        
+
         // Required fields validation
         if (!formData.ragione_sociale?.trim()) {
             throw new Error('La ragione sociale è obbligatoria');
@@ -30,7 +30,7 @@ export class FornitoreForm extends BaseForm {
     getFormData() {
         const data = super.getFormData();
         data.attivo = this.form.attivo.checked;
-        
+
         // Clean up empty strings
         Object.keys(data).forEach(key => {
             if (data[key] === '') {

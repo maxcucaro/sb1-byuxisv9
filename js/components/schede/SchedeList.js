@@ -10,6 +10,9 @@ export async function loadSchedeList(tableBody, loadingIndicator) {
     }
 
     try {
+        loadingIndicator.style.display = 'block';
+        tableBody.innerHTML = '<tr><td colspan="9">Caricamento in corso...</td></tr>';
+
         const result = await schedeLavoroService.getSchedeLavoro();
         if (!result.success) {
             throw new Error(result.error);

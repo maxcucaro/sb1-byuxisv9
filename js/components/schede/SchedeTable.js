@@ -18,13 +18,13 @@ export function createSchedeTable(schede, workspaceButtons = true) {
         if (workspaceButtons) {
             switch (scheda.stato) {
                 case 'APPROVATA':
-                    workspaceButton = `<a href="richiesta-materiali.html?id=${scheda.id}" class="button workspace-button">Crea Richiesta</a>`;
+                    workspaceButton = `<a href="/pages/workspace/schede/richiesta-materiali.html?id=${scheda.id}" class="button workspace-button">Crea Richiesta</a>`;
                     break;
                 case 'IN_CORSO':
-                    workspaceButton = `<a href="workspace-materiali.html?id=${scheda.id}" class="button workspace-button">In Preparazione</a>`;
+                    workspaceButton = `<a href="/pages/workspace/schede/workspace-materiali.html?id=${scheda.id}" class="button workspace-button">In Preparazione</a>`;
                     break;
                 case 'COMPLETATA':
-                    workspaceButton = `<a href="workspace-materiali.html?id=${scheda.id}" class="button workspace-button">In Uscita</a>`;
+                    workspaceButton = `<a href="/pages/workspace/schede/workspace-materiali.html?id=${scheda.id}" class="button workspace-button">In Uscita</a>`;
                     break;
             }
         }
@@ -40,10 +40,10 @@ export function createSchedeTable(schede, workspaceButtons = true) {
                 <td>${scheda.luogo}</td>
                 <td class="status-${scheda.stato.toLowerCase()}">${scheda.stato}</td>
                 <td>
-                    <button onclick="window.visualizzaScheda('${scheda.id}')" class="button">
+                    <button onclick="window.location.href='/pages/schede/visualizza-scheda.html?id=${scheda.id}'" class="button">
                         Visualizza
                     </button>
-                    <a href="modifica-scheda.html?id=${scheda.id}" class="button">
+                    <a href="/pages/schede/modifica-scheda.html?id=${scheda.id}" class="button">
                         Modifica
                     </a>
                     ${workspaceButton}
