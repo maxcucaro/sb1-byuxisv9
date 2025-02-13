@@ -1,0 +1,117 @@
+/* Workspace Sidebar Styles */
+.ws-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background: #1E293B;
+    color: white;
+    z-index: 1001;
+    overflow-y: auto;
+    padding-top: 60px;
+    transition: all 0.3s ease;
+    width: 0;
+    opacity: 0;
+}
+
+/* Vertical stripe */
+.ws-sidebar-stripe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100vh;
+    background: #32CD32;
+    z-index: 1002;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.ws-sidebar-stripe.active {
+    background: #FF4444;
+}
+
+/* Open state */
+.ws-sidebar.open {
+    width: var(--sidebar-width, 300px);
+    opacity: 1;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+}
+
+/* Content styles */
+.ws-sidebar-content {
+    padding: 20px;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+}
+
+.ws-sidebar.open .ws-sidebar-content {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.ws-sidebar-section {
+    margin-bottom: 30px;
+}
+
+.ws-sidebar-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #32CD32;
+    color: white;
+}
+
+.ws-sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ws-sidebar-menu li {
+    margin-bottom: 10px;
+}
+
+.ws-sidebar-menu a {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.ws-sidebar-menu a:hover {
+    background-color: rgba(50, 205, 50, 0.2);
+    transform: translateX(5px);
+}
+
+/* Main content adjustment */
+.ws-main {
+    margin-left: 6px;
+    width: calc(100% - 6px);
+    transition: margin-left 0.3s ease;
+}
+
+.ws-sidebar.open ~ .ws-main {
+    margin-left: var(--sidebar-width, 300px);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .ws-sidebar {
+        --sidebar-width: 280px;
+    }
+    
+    .ws-sidebar-content {
+        padding: 20px;
+    }
+
+    /* On mobile, overlay the content instead of pushing it */
+    .ws-sidebar.open ~ .ws-main {
+        margin-left: 6px;
+    }
+}
