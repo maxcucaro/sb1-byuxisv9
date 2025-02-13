@@ -6,6 +6,12 @@
     --text-color: #0F172A;
     --background-color: #F8FAFC;
     --border-color: #E2E8F0;
+    --sidebar-width: 300px;
+    --header-height: 80px;
+    --nav-height: 60px;
+    --footer-height: 60px;
+    --content-max-width: 1200px;
+    --content-padding: 2rem;
 }
 
 * {
@@ -19,6 +25,9 @@ body {
     line-height: 1.5;
     color: var(--text-color);
     background-color: var(--background-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Header */
@@ -26,12 +35,13 @@ body {
     background: var(--primary-color);
     padding: 1.5rem 0;
     border-bottom: 1px solid var(--border-color);
+    height: var(--header-height);
 }
 
 .header-content {
-    max-width: 1200px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0 var(--content-padding);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -54,23 +64,28 @@ body {
 .nav {
     background: white;
     border-bottom: 1px solid var(--border-color);
+    height: var(--nav-height);
 }
 
 .nav-container {
-    max-width: 1200px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0 var(--content-padding);
 }
 
 .nav ul {
     list-style: none;
     display: flex;
     gap: 2rem;
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .nav a {
-    display: inline-block;
-    padding: 1rem 0;
+    display: inline-flex;
+    align-items: center;
+    height: var(--nav-height);
     color: var(--text-color);
     text-decoration: none;
     font-weight: 500;
@@ -87,9 +102,19 @@ body {
 
 /* Main Content */
 .main-content {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1.5rem;
+    flex: 1;
+    width: 100%;
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: var(--content-padding);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.main-content > * {
+    width: 100%;
 }
 
 .main-content h2 {
@@ -103,6 +128,7 @@ body {
 .button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     padding: 0.5rem 1rem;
     background: var(--accent-color);
     color: white;
@@ -113,6 +139,7 @@ body {
     text-decoration: none;
     cursor: pointer;
     transition: background-color 0.2s;
+    min-width: 100px;
 }
 
 .button:hover {
@@ -121,73 +148,41 @@ body {
 
 /* Footer */
 .footer {
-    border-top: 1px solid var(--border-color);
+    background: var(--primary-color);
+    color: white;
     padding: 1.5rem 0;
-    color: #64748B;
-    font-size: 0.875rem;
     text-align: center;
+    font-size: 0.875rem;
+    height: var(--footer-height);
+    margin-top: auto;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-    .nav ul {
-        flex-direction: column;
-        gap: 0;
+@media (max-width: 1024px) {
+    :root {
+        --content-padding: 1.5rem;
     }
-    
+
+    .nav ul {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
     .nav a {
-        display: block;
         padding: 0.75rem 0;
     }
 }
 
-/* Stili aggiuntivi per il pulsante "Visualizza Kit" e il modal */
-.button-green {
-    background-color: #28a745;
-    color: white;
-}
+@media (max-width: 768px) {
+    :root {
+        --content-padding: 1rem;
+    }
 
-.button-green:hover {
-    background-color: #218838;
-}
+    .header-content {
+        padding: 0 var(--content-padding);
+    }
 
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgb(0, 0, 0);
-    background-color: rgba(0, 0, 0, 0.4);
-}
-
-.modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 600px;
-    border-radius: 10px;
-}
-
-.modal-close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.modal-close:hover,
-.modal-close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.kit-item {
-    margin-bottom: 1rem;
+    .nav-container {
+        padding: 0 var(--content-padding);
+    }
 }

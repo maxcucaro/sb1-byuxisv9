@@ -1,0 +1,126 @@
+/* Base styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background: #1E293B; /* Grigio scuro */
+    color: white;
+    z-index: 1001;
+    overflow-y: auto;
+    padding-top: 60px;
+    transition: all 0.3s ease;
+    width: 0;
+    opacity: 0;
+}
+
+/* Vertical stripe */
+.sidebar-stripe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100vh;
+    background: #32CD32; /* Verde lime */
+    z-index: 1002;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar-stripe.active {
+    background: #FF4444; /* Rosso */
+}
+
+/* Remove overlay */
+.sidebar-overlay {
+    display: none;
+}
+
+/* Open state */
+.sidebar.open {
+    width: var(--sidebar-width, 300px);
+    opacity: 1;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+}
+
+/* Remove toggle button */
+.sidebar-toggle {
+    display: none;
+}
+
+/* Content styles */
+.sidebar-content {
+    padding: 20px;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+}
+
+.sidebar.open .sidebar-content {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.sidebar-section {
+    margin-bottom: 30px;
+}
+
+.sidebar-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #32CD32; /* Verde lime */
+    color: white;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-menu li {
+    margin-bottom: 10px;
+}
+
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.sidebar-menu a:hover {
+    background-color: rgba(50, 205, 50, 0.2); /* Verde lime con opacità */
+    transform: translateX(5px);
+}
+
+/* Main content adjustment */
+.main-content {
+    margin-left: 6px; /* Width of the stripe */
+    width: calc(100% - 6px);
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: var(--content-padding);
+    transition: margin-left 0.3s ease;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .sidebar {
+        --sidebar-width: 280px;
+    }
+    
+    .sidebar-content {
+        padding: 20px;
+    }
+
+    /* On mobile, overlay the content instead of pushing it */
+    .sidebar.open ~ .main-content {
+        margin-left: 6px;
+    }
+}

@@ -1,0 +1,116 @@
+.material-search-section {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.search-controls {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.search-group label {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.search-results {
+    background: var(--background-color);
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: white;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.material-info {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.material-code {
+    font-weight: 600;
+    color: var(--text-color);
+    min-width: 100px;
+}
+
+.material-desc {
+    flex: 1;
+}
+
+.material-cat {
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.add-button {
+    padding: 0.25rem 0.75rem;
+    min-width: auto;
+}
+
+.no-results {
+    padding: 1rem;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+.selected-materials {
+    margin-top: 2rem;
+}
+
+.selected-materials h4 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+.quantity-input {
+    width: 80px;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+}
+
+.note-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+}
+
+.remove-button {
+    background-color: #ef4444 !important;
+    color: white !important;
+}
+
+.remove-button:hover {
+    background-color: #dc2626 !important;
+}
+
+@media (max-width: 768px) {
+    .search-controls {
+        grid-template-columns: 1fr;
+    }
+}
