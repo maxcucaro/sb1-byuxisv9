@@ -1,8 +1,8 @@
-import { SETTORI } from '../../utils/constants.js';
-import { supabase } from '../../utils/supabaseClient.js';
+import { WORK_ORDER_TYPES } from '../../constants/workOrderTypes.js';
+import { getReferenceValue } from '../../utils/referenceUtils.js';
 
 export function createImpegniModal() {
-    // Rimuovi il modale esistente se presente
+    // Remove existing modal if present
     const existingModal = document.getElementById('impegniModal');
     if (existingModal) {
         existingModal.remove();
@@ -11,321 +11,77 @@ export function createImpegniModal() {
     const modalHTML = `
         <div id="impegniModal" class="modal">
             <div class="modal-content">
-                <span class="modal-close">&times;</span>
-                <h3>Dettagli Giacenza</h3>
-                <div class="impegni-content"></div>
+                <span class="close-modal">&times;</span>
+                <h3>Dettagli Impegni</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Codice Scheda</th>
+                                <th>Nome</th>
+                                <th>Tipo</th>
+                                <th>Riferimento</th>
+                                <th>Data Inizio</th>
+                                <th>Data Fine</th>
+                                <th>Quantità</th>
+                                <th>Stato</th>
+                            </tr>
+                        </thead>
+                        <tbody id="impegniTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-
-        <style>
-            .modal {
-                display: none;
-                position: fixed;
-                z-index: 1000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                overflow: auto;
-                background-color: rgba(0,0,0,0.4);
-            }
-
-            .modal-content {
-                background-color: #fefefe;
-                margin: 5% auto;
-                padding: 0;
-                border: 1px solid #888;
-                width: 90%;
-                max-width: 1000px;
-                border-radius: 0.5rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-
-            .modal-close {
-                color: #aaa;
-                float: right;
-                font-size: 28px;
-                font-weight: bold;
-                cursor: pointer;
-                position: absolute;
-                right: 20px;
-                top: 10px;
-            }
-
-            .modal-close:hover {
-                color: black;
-            }
-
-            .giacenze-info {
-                padding: 1.5rem;
-            }
-
-            .info-header {
-                margin-bottom: 1.5rem;
-            }
-
-            .info-header h4 {
-                margin: 0;
-                color: var(--text-color);
-                font-size: 1.5rem;
-            }
-
-            .articolo-code {
-                color: #6B7280;
-                font-size: 1rem;
-                margin-top: 0.25rem;
-            }
-
-            .info-row {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 1rem;
-                margin-bottom: 2rem;
-                background: #f8fafc;
-                padding: 1rem;
-                border-radius: 0.5rem;
-            }
-
-            .info-item {
-                display: flex;
-                flex-direction: column;
-                gap: 0.25rem;
-            }
-
-            .info-item label {
-                font-size: 0.875rem;
-                color: #6B7280;
-                font-weight: 500;
-            }
-
-            .info-item span {
-                font-size: 1.25rem;
-                font-weight: 600;
-                color: var(--text-color);
-            }
-
-            .impegni-section {
-                margin-top: 1.5rem;
-            }
-
-            .impegni-section h4 {
-                color: var(--text-color);
-                font-size: 1.1rem;
-                margin: 0 0 1rem 0;
-                padding-bottom: 0.5rem;
-                border-bottom: 2px solid var(--accent-color);
-            }
-
-            .table-responsive {
-                overflow-x: auto;
-                margin: 0 -1.5rem;
-                padding: 0 1.5rem;
-            }
-
-            .loading-indicator {
-                text-align: center;
-                padding: 2rem;
-            }
-
-            .spinner {
-                width: 40px;
-                height: 40px;
-                margin: 0 auto 1rem;
-                border: 3px solid #f3f3f3;
-                border-top: 3px solid var(--accent-color);
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            }
-
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-
-            .error-message {
-                color: #ef4444;
-                padding: 1rem;
-                background: #fee2e2;
-                border-radius: 0.5rem;
-                margin-top: 1rem;
-            }
-
-            .error-message h4 {
-                margin-bottom: 0.5rem;
-                color: #991b1b;
-            }
-
-            .no-data {
-                text-align: center;
-                padding: 2rem;
-                color: #6B7280;
-                font-style: italic;
-            }
-
-            .quantita-negativa {
-                color: #ef4444;
-            }
-        </style>
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-    const modal = document.getElementById('impegniModal');
 
     // Setup close handlers
-    const closeBtn = modal.querySelector('.modal-close');
+    const modal = document.getElementById('impegniModal');
+    const closeBtn = modal.querySelector('.close-modal');
+    
     closeBtn.onclick = () => modal.style.display = 'none';
     window.onclick = (e) => {
-        if (e.target === modal) modal.style.display = 'none';
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
     };
-
-    return modal;
 }
 
-export function showImpegniModal(content) {
-    const modal = document.getElementById('impegniModal') || createImpegniModal();
-    const contentContainer = modal.querySelector('.impegni-content');
+export function showImpegniModal(impegni) {
+    const modal = document.getElementById('impegniModal');
+    const tableBody = document.getElementById('impegniTableBody');
     
-    if (contentContainer) {
-        contentContainer.innerHTML = content;
+    if (!modal || !tableBody) return;
+
+    if (!impegni?.length) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="no-data">
+                    Nessun impegno trovato
+                </td>
+            </tr>`;
+    } else {
+        tableBody.innerHTML = impegni.map(impegno => {
+            const scheda = impegno.schede_lavoro;
+            const refValue = getReferenceValue(scheda, scheda.tipo_lavoro, WORK_ORDER_TYPES);
+            
+            return `
+                <tr>
+                    <td>${scheda.codice}</td>
+                    <td>${scheda.nome}</td>
+                    <td>${scheda.tipo_lavoro}</td>
+                    <td>${refValue || '-'}</td>
+                    <td>${new Date(scheda.data_inizio).toLocaleDateString()}</td>
+                    <td>${new Date(scheda.data_fine).toLocaleDateString()}</td>
+                    <td>${impegno.quantita}</td>
+                    <td class="status-${scheda.stato.toLowerCase()}">
+                        ${scheda.stato}
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
-    
+
     modal.style.display = 'block';
-}
-
-export async function showGiacenzaEffettiva(settore, codice) {
-    try {
-        // Show loading state
-        showImpegniModal(`
-            <div class="loading-indicator">
-                <div class="spinner"></div>
-                <p>Caricamento dettagli giacenza...</p>
-            </div>
-        `);
-
-        // Get article details
-        const { data: articolo, error: articoloError } = await supabase
-            .from(`articoli_${settore.toLowerCase()}`)
-            .select('cod, descrizione')
-            .eq('cod', codice)
-            .single();
-
-        if (articoloError) throw new Error(`Errore recupero articolo: ${articoloError.message}`);
-
-        // Get giacenza data
-        const { data: giacenza, error: giacenzaError } = await supabase.rpc('get_giacenza_effettiva', {
-            _settore: settore,
-            _articolo_cod: codice
-        });
-
-        if (giacenzaError) throw giacenzaError;
-        if (!giacenza) throw new Error('Nessun dato disponibile');
-
-        // Create modal content
-        const modalContent = `
-            <div class="giacenze-info">
-                <div class="info-header">
-                    <h4>${articolo.descrizione}</h4>
-                    <p class="articolo-code">${articolo.cod}</p>
-                </div>
-                
-                <div class="info-row">
-                    <div class="info-item">
-                        <label>Giacenza Totale:</label>
-                        <span>${giacenza[0].quantita_totale}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>In Kit:</label>
-                        <span>${giacenza[0].quantita_in_kit}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Impegnata:</label>
-                        <span>${giacenza[0].quantita_impegnata}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>In Uscita:</label>
-                        <span>${giacenza[0].quantita_in_uscita}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Disponibile:</label>
-                        <span class="${giacenza[0].quantita_disponibile < 0 ? 'quantita-negativa' : ''}">${giacenza[0].quantita_disponibile}</span>
-                    </div>
-                </div>
-
-                ${giacenza[0].dettaglio_kit?.length > 0 ? `
-                    <div class="impegni-section">
-                        <h4>Dettaglio Kit</h4>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Nome Kit</th>
-                                        <th>Settore</th>
-                                        <th>Quantità Kit</th>
-                                        <th>Quantità per Kit</th>
-                                        <th>Totale Impegnato</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${giacenza[0].dettaglio_kit.map(kit => `
-                                        <tr>
-                                            <td>${kit.kit_nome}</td>
-                                            <td>${SETTORI[kit.kit_settore]?.nome || kit.kit_settore}</td>
-                                            <td>${kit.quantita_kit}</td>
-                                            <td>${kit.quantita_componente}</td>
-                                            <td>${kit.totale_impegnato}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                ` : '<p class="no-data">Nessun utilizzo in kit</p>'}
-
-                <div class="impegni-section">
-                    <h4>Impegni Futuri</h4>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Scheda</th>
-                                    <th>Data Inizio</th>
-                                    <th>Data Fine</th>
-                                    <th>Stato</th>
-                                    <th>Quantità</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${giacenza[0].impegni_futuri?.length > 0 ? 
-                                    giacenza[0].impegni_futuri.map(impegno => `
-                                        <tr>
-                                            <td>${impegno.codice}</td>
-                                            <td>${new Date(impegno.data_inizio).toLocaleDateString()}</td>
-                                            <td>${new Date(impegno.data_fine).toLocaleDateString()}</td>
-                                            <td class="status-${impegno.stato.toLowerCase()}">${impegno.stato}</td>
-                                            <td>${impegno.quantita}</td>
-                                        </tr>
-                                    `).join('') : 
-                                    '<tr><td colspan="5" class="no-data">Nessun impegno futuro</td></tr>'
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Show modal with details
-        showImpegniModal(modalContent);
-
-    } catch (error) {
-        console.error('Errore durante il recupero dei dettagli:', error);
-        
-        // Show error in modal
-        showImpegniModal(`
-            <div class="error-message">
-                <h4>Errore</h4>
-                <p>${error.message || 'Si è verificato un errore durante il recupero dei dettagli'}</p>
-            </div>
-        `);
-    }
 }

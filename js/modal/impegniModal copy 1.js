@@ -16,148 +16,6 @@ export function createImpegniModal() {
                 <div class="impegni-content"></div>
             </div>
         </div>
-
-        <style>
-            .modal {
-                display: none;
-                position: fixed;
-                z-index: 1000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                overflow: auto;
-                background-color: rgba(0,0,0,0.4);
-            }
-
-            .modal-content {
-                background-color: #fefefe;
-                margin: 15% auto;
-                padding: 20px;
-                border: 1px solid #888;
-                width: 80%;
-                max-width: 800px;
-                border-radius: 0.5rem;
-                position: relative;
-            }
-
-            .modal-close {
-                color: #aaa;
-                float: right;
-                font-size: 28px;
-                font-weight: bold;
-                cursor: pointer;
-                position: absolute;
-                right: 20px;
-                top: 10px;
-            }
-
-            .modal-close:hover,
-            .modal-close:focus {
-                color: black;
-                text-decoration: none;
-                cursor: pointer;
-            }
-
-            .giacenze-info {
-                padding: 1.5rem;
-            }
-
-            .info-header {
-                margin-bottom: 1.5rem;
-            }
-
-            .info-header h4 {
-                margin: 0;
-                color: var(--text-color);
-                font-size: 1.25rem;
-            }
-
-            .articolo-code {
-                color: #6B7280;
-                font-size: 0.875rem;
-                margin-top: 0.25rem;
-            }
-
-            .info-row {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 1rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .info-item {
-                background: #f8fafc;
-                padding: 1rem;
-                border-radius: 0.375rem;
-            }
-
-            .info-item label {
-                display: block;
-                font-weight: 500;
-                color: #64748b;
-                margin-bottom: 0.25rem;
-            }
-
-            .info-item span {
-                font-size: 1.25rem;
-                font-weight: 600;
-                color: var(--text-color);
-            }
-
-            .kit-details {
-                margin-top: 1.5rem;
-            }
-
-            .kit-details h4 {
-                margin-bottom: 1rem;
-                color: var(--text-color);
-            }
-
-            .loading-indicator {
-                text-align: center;
-                padding: 2rem;
-            }
-
-            .spinner {
-                width: 40px;
-                height: 40px;
-                margin: 0 auto 1rem;
-                border: 3px solid #f3f3f3;
-                border-top: 3px solid var(--accent-color);
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            }
-
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-
-            .error-message {
-                color: #ef4444;
-                padding: 1rem;
-                background: #fee2e2;
-                border-radius: 0.375rem;
-                margin-top: 1rem;
-            }
-
-            .error-message h4 {
-                margin-bottom: 0.5rem;
-                color: #991b1b;
-            }
-
-            .no-data {
-                text-align: center;
-                padding: 2rem;
-                color: #6B7280;
-                font-style: italic;
-            }
-
-            .quantita-negativa {
-                color: #ef4444;
-            }
-        </style>
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
@@ -194,14 +52,16 @@ export async function showGiacenzaEffettiva(settore, codice) {
             </div>
         `);
 
-        // First get article details
+        // First verify if article exists
         const { data: articolo, error: articoloError } = await supabase
             .from(`articoli_${settore.toLowerCase()}`)
-            .select('cod, descrizione')
+            .select('cod, descrizione, quantita')
             .eq('cod', codice)
             .single();
 
-        if (articoloError) throw new Error(`Errore recupero articolo: ${articoloError.message}`);
+        if (articoloError) {
+            throw new Error(`Articolo ${codice} non trovato nel settore ${settore}`);
+        }
 
         // Get giacenza data
         const { data: giacenza, error: giacenzaError } = await supabase.rpc('get_giacenza_effettiva', {
@@ -211,6 +71,24 @@ export async function showGiacenzaEffettiva(settore, codice) {
 
         if (giacenzaError) throw giacenzaError;
         if (!giacenza) throw new Error('Nessun dato disponibile');
+
+        // Get kit details
+        const { data: kitDetails, error: kitError } = await supabase
+            .from('kit_componenti')
+            .select(`
+                kit_id,
+                quantita,
+                kit_articoli (
+                    nome,
+                    settore,
+                    articolo_cod,
+                    quantita_kit
+                )
+            `)
+            .eq('componente_settore', settore)
+            .eq('componente_cod', codice);
+
+        if (kitError) throw kitError;
 
         // Create modal content
         const modalContent = `
@@ -243,9 +121,9 @@ export async function showGiacenzaEffettiva(settore, codice) {
                     </div>
                 </div>
 
-                ${giacenza.dettaglio_kit?.length > 0 ? `
+                ${kitDetails && kitDetails.length > 0 ? `
                     <div class="kit-details">
-                        <h4>Dettaglio Kit</h4>
+                        <h4>Utilizzo nei Kit</h4>
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -257,15 +135,18 @@ export async function showGiacenzaEffettiva(settore, codice) {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${giacenza.dettaglio_kit.map(kit => `
-                                    <tr>
-                                        <td>${kit.kit_nome}</td>
-                                        <td>${SETTORI[kit.kit_settore]?.nome || kit.kit_settore}</td>
-                                        <td>${kit.quantita_kit}</td>
-                                        <td>${kit.quantita_componente}</td>
-                                        <td>${kit.totale_impegnato}</td>
-                                    </tr>
-                                `).join('')}
+                                ${kitDetails.map(kit => {
+                                    const totaleImpegnato = kit.quantita * kit.kit_articoli.quantita_kit;
+                                    return `
+                                        <tr>
+                                            <td>${kit.kit_articoli.nome}</td>
+                                            <td>${SETTORI[kit.kit_articoli.settore]?.nome || kit.kit_articoli.settore}</td>
+                                            <td>${kit.kit_articoli.quantita_kit}</td>
+                                            <td>${kit.quantita}</td>
+                                            <td>${totaleImpegnato}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>
