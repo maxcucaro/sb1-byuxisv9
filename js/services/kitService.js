@@ -13,7 +13,6 @@ class KitService {
                             id,
                             componente_settore,
                             componente_cod,
-                            componente_descrizione,
                             quantita,
                             note
                         )
@@ -38,7 +37,6 @@ class KitService {
                             id,
                             componente_settore,
                             componente_cod,
-                            componente_descrizione,
                             quantita,
                             note
                         )
@@ -55,23 +53,25 @@ class KitService {
     async getKitByArticolo(settore, articoloCod) {
         return handleError(async () => {
             const { data, error } = await supabaseInstance.retryOperation(async (supabase) => {
-                return await supabase.rpc('get_kit_completo', {
-                    _settore: settore,
-                    _articolo_cod: articoloCod
-                });
+                return await supabase
+                    .from('kit_articoli')
+                    .select(`
+                        *,
+                        kit_componenti (
+                            id,
+                            componente_settore,
+                            componente_cod,
+                            quantita,
+                            note
+                        )
+                    `)
+                    .eq('settore', settore)
+                    .eq('articolo_cod', articoloCod)
+                    .single();
             });
 
             if (error) throw error;
-            if (!data || data.length === 0) {
-                throw new Error('Kit non trovato');
-            }
-
-            // Convert componenti from JSON to array
-            const kit = data[0];
-            kit.kit_componenti = Array.isArray(kit.componenti) ? kit.componenti : [];
-            delete kit.componenti;
-
-            return { success: true, data: kit };
+            return { success: true, data };
         }, 'recupero kit per articolo');
     }
 
@@ -118,13 +118,19 @@ class KitService {
 
     async updateKit(settore, articoloCod, formData) {
         return handleError(async () => {
-            // Get existing kit
-            const result = await this.getKitByArticolo(settore, articoloCod);
-            if (!result.success) throw new Error(result.error);
+            // Find existing kit
+            const { data: existingKit, error: findError } = await supabaseInstance.retryOperation(async (supabase) => {
+                return await supabase
+                    .from('kit_articoli')
+                    .select('id')
+                    .eq('settore', settore)
+                    .eq('articolo_cod', articoloCod)
+                    .single();
+            });
 
-            const kit = result.data;
+            if (findError) throw new Error('Kit non trovato');
 
-            // Update kit details
+            // Update kit
             const { error: updateError } = await supabaseInstance.retryOperation(async (supabase) => {
                 return await supabase
                     .from('kit_articoli')
@@ -134,7 +140,7 @@ class KitService {
                         quantita_kit: formData.quantita_kit || 1,
                         note: formData.note
                     })
-                    .eq('id', kit.id);
+                    .eq('id', existingKit.id);
             });
 
             if (updateError) throw updateError;
@@ -144,7 +150,7 @@ class KitService {
                 return await supabase
                     .from('kit_componenti')
                     .delete()
-                    .eq('kit_id', kit.id);
+                    .eq('kit_id', existingKit.id);
             });
 
             if (deleteError) throw deleteError;
@@ -156,7 +162,7 @@ class KitService {
                         .from('kit_componenti')
                         .insert(
                             formData.componenti.map(comp => ({
-                                kit_id: kit.id,
+                                kit_id: existingKit.id,
                                 componente_settore: comp.settore,
                                 componente_cod: comp.cod,
                                 quantita: comp.quantita,

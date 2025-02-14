@@ -29,24 +29,28 @@ export async function showKitDetails(settore, codice, isKit = false) {
                 _articolo_cod: codice
             });
 
-            if (!giacenza || !giacenza[0]) throw new Error('Dati giacenza non disponibili');
-
-            const giacenzaAttuale = giacenza[0].quantita_totale || 0;
-            const quantitaInKit = giacenza[0].quantita_in_kit || 0;
-
             kitDetails.innerHTML = `
-                <div class="kit-header">
+                <div class="kit-info">
                     <h4>${kit.nome}</h4>
-                    <div class="giacenze-info">
-                        <p><strong>Giacenza Attuale:</strong> ${giacenzaAttuale}</p>
-                        <p><strong>Quantità Impegnata in Kit:</strong> ${quantitaInKit}</p>
-                        <p><strong>Quantità Disponibile:</strong> ${giacenzaAttuale - quantitaInKit}</p>
-                    </div>
                     <p class="kit-description">${kit.descrizione || ''}</p>
-                </div>
-                <div class="kit-body">
-                    <div class="kit-section">
-                        <h5>Componenti</h5>
+                    
+                    <div class="giacenze-info">
+                        <div class="info-item">
+                            <label>Giacenza Totale:</label>
+                            <span>${giacenza[0].quantita_totale}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Quantità Kit:</label>
+                            <span>${kit.quantita_kit}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Disponibile:</label>
+                            <span class="${giacenza[0].quantita_disponibile < 0 ? 'quantita-negativa' : ''}">${giacenza[0].quantita_disponibile}</span>
+                        </div>
+                    </div>
+
+                    <div class="kit-components">
+                        <h4>Componenti</h4>
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -54,37 +58,27 @@ export async function showKitDetails(settore, codice, isKit = false) {
                                     <th>Codice</th>
                                     <th>Descrizione</th>
                                     <th>Quantità per Kit</th>
-                                    <th>Totale Impegnato</th>
+                                    <th>Totale Richiesto</th>
                                     <th>Note</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${kit.kit_componenti.map(comp => {
-                                    const totaleImpegnato = comp.quantita * (kit.quantita_kit || 1);
+                                    const totaleRichiesto = comp.quantita * kit.quantita_kit;
                                     return `
                                         <tr>
                                             <td>${SETTORI[comp.componente_settore]?.nome || comp.componente_settore}</td>
                                             <td>${comp.componente_cod}</td>
                                             <td>${comp.componente_descrizione || 'Non trovato'}</td>
                                             <td>${comp.quantita}</td>
-                                            <td>${totaleImpegnato}</td>
+                                            <td>${totaleRichiesto}</td>
                                             <td>${comp.note || '-'}</td>
                                         </tr>
                                     `;
-                                }).join('') || `
-                                    <tr>
-                                        <td colspan="6" class="no-data">Nessun componente trovato</td>
-                                    </tr>
-                                `}
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>
-                    ${kit.note ? `
-                        <div class="kit-section">
-                            <h5>Note</h5>
-                            <p>${kit.note}</p>
-                        </div>
-                    ` : ''}
                 </div>
             `;
         } else {
@@ -94,50 +88,65 @@ export async function showKitDetails(settore, codice, isKit = false) {
                 _articolo_cod: codice
             });
 
-            if (!giacenza || !giacenza[0]) throw new Error('Dati giacenza non disponibili');
+            // Get article details
+            const { data: articolo } = await supabase
+                .from(`articoli_${settore.toLowerCase()}`)
+                .select('descrizione')
+                .eq('cod', codice)
+                .single();
 
-            const kits = Array.isArray(giacenza[0].dettaglio_kit) ? giacenza[0].dettaglio_kit : [];
-            
             kitDetails.innerHTML = `
                 <div class="kit-info">
-                    <h4>Utilizzo nei Kit</h4>
+                    <h4>${articolo?.descrizione || codice}</h4>
+                    
                     <div class="giacenze-info">
-                        <p><strong>Giacenza Attuale:</strong> ${giacenza[0].quantita_totale || 0}</p>
-                        <p><strong>Quantità Impegnata in Kit:</strong> ${giacenza[0].quantita_in_kit || 0}</p>
-                        <p><strong>Quantità Disponibile:</strong> ${giacenza[0].quantita_disponibile || 0}</p>
+                        <div class="info-item">
+                            <label>Giacenza Totale:</label>
+                            <span>${giacenza[0].quantita_totale}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>In Kit:</label>
+                            <span>${giacenza[0].quantita_in_kit}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Disponibile:</label>
+                            <span class="${giacenza[0].quantita_disponibile < 0 ? 'quantita-negativa' : ''}">${giacenza[0].quantita_disponibile}</span>
+                        </div>
                     </div>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Nome Kit</th>
-                                <th>Settore</th>
-                                <th>Quantità per Kit</th>
-                                <th>Numero Kit</th>
-                                <th>Totale Impegnato</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${kits.length > 0 ? kits.map(kit => `
-                                <tr>
-                                    <td>${kit.kit_nome}</td>
-                                    <td>${SETTORI[kit.kit_settore]?.nome || kit.kit_settore}</td>
-                                    <td>${kit.quantita_componente}</td>
-                                    <td>${kit.quantita_kit}</td>
-                                    <td>${kit.totale_impegnato}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td colspan="5" class="no-data">Questo articolo non è utilizzato in nessun kit</td>
-                                </tr>
-                            `}
-                        </tbody>
-                    </table>
+
+                    ${giacenza[0].dettaglio_kit?.length > 0 ? `
+                        <div class="kit-usage">
+                            <h4>Utilizzo nei Kit</h4>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome Kit</th>
+                                        <th>Settore</th>
+                                        <th>Quantità per Kit</th>
+                                        <th>Numero Kit</th>
+                                        <th>Totale Impegnato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${giacenza[0].dettaglio_kit.map(kit => `
+                                        <tr>
+                                            <td>${kit.kit_nome}</td>
+                                            <td>${SETTORI[kit.kit_settore]?.nome || kit.kit_settore}</td>
+                                            <td>${kit.quantita_componente}</td>
+                                            <td>${kit.quantita_kit}</td>
+                                            <td>${kit.totale_impegnato}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    ` : '<p class="no-data">Questo articolo non è utilizzato in nessun kit</p>'}
                 </div>
             `;
         }
 
     } catch (error) {
-        console.error('Errore durante la visualizzazione del kit:', error);
+        console.error('Errore durante la visualizzazione dei dettagli:', error);
         const kitDetails = document.querySelector('.kit-details');
         if (kitDetails) {
             kitDetails.innerHTML = `
@@ -175,107 +184,99 @@ function createKitModal() {
 
             .modal-content {
                 background-color: #fefefe;
-                margin: 5% auto;
-                padding: 0;
+                margin: 15% auto;
+                padding: 20px;
                 border: 1px solid #888;
-                width: 90%;
-                max-width: 1000px;
+                width: 80%;
+                max-width: 800px;
                 border-radius: 0.5rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-
-            .modal-content h3 {
-                margin: 0;
-                padding: 1.25rem;
-                background: var(--primary-color);
-                color: white;
-                border-radius: 0.5rem 0.5rem 0 0;
-                font-size: 1.25rem;
                 position: relative;
             }
 
             .modal-close {
-                color: white;
+                color: #aaa;
                 float: right;
-                font-size: 1.5rem;
+                font-size: 28px;
                 font-weight: bold;
                 cursor: pointer;
                 position: absolute;
-                right: 1.25rem;
-                top: 1.25rem;
+                right: 20px;
+                top: 10px;
             }
 
-            .modal-close:hover {
-                opacity: 0.8;
+            .modal-close:hover,
+            .modal-close:focus {
+                color: black;
+                text-decoration: none;
+                cursor: pointer;
             }
 
             .kit-details {
-                padding: 1.5rem;
+                margin-top: 1rem;
             }
 
-            .kit-header {
+            .kit-info {
                 margin-bottom: 1.5rem;
             }
 
-            .kit-header h4 {
-                margin: 0;
-                font-size: 1.5rem;
+            .kit-info h4 {
+                margin-bottom: 1rem;
                 color: var(--text-color);
             }
 
             .kit-description {
-                color: #4B5563;
-                margin: 0.5rem 0;
-                line-height: 1.5;
+                color: #666;
+                margin-bottom: 1rem;
             }
 
             .giacenze-info {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+                margin-bottom: 1.5rem;
                 background: #f8fafc;
                 padding: 1rem;
                 border-radius: 0.5rem;
-                margin: 1rem 0;
             }
 
-            .giacenze-info p {
-                margin: 0.5rem 0;
+            .info-item {
+                padding: 0.5rem;
             }
 
-            .kit-section {
-                margin-bottom: 2rem;
+            .info-item label {
+                display: block;
+                font-weight: 500;
+                color: #64748b;
+                margin-bottom: 0.25rem;
             }
 
-            .kit-section:last-child {
-                margin-bottom: 0;
-            }
-
-            .kit-section h5 {
+            .info-item span {
+                font-size: 1.25rem;
+                font-weight: 600;
                 color: var(--text-color);
-                font-size: 1.1rem;
-                margin: 0 0 1rem 0;
-                padding-bottom: 0.5rem;
-                border-bottom: 2px solid var(--accent-color);
+            }
+
+            .quantita-negativa {
+                color: #ef4444;
             }
 
             .loading {
                 text-align: center;
                 padding: 2rem;
-                color: #6B7280;
+                color: #666;
             }
 
             .error-message {
                 color: #ef4444;
                 padding: 1rem;
                 background: #fee2e2;
-                border-radius: 0.5rem;
+                border-radius: 0.375rem;
+                margin-top: 1rem;
             }
 
             .error-message h4 {
-                margin: 0 0 0.5rem 0;
+                margin-bottom: 0.5rem;
                 color: #991b1b;
-            }
-
-            .error-message p {
-                margin: 0;
             }
 
             .no-data {
@@ -283,17 +284,6 @@ function createKitModal() {
                 padding: 2rem;
                 color: #6B7280;
                 font-style: italic;
-                background: #f8fafc;
-                border-radius: 0.5rem;
-            }
-
-            @media (max-width: 768px) {
-                .modal-content {
-                    margin: 0;
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 0;
-                }
             }
         </style>
     `;

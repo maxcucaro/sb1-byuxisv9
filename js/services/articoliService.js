@@ -32,10 +32,8 @@ class ArticoliService {
                 try {
                     const { data, error } = await supabaseInstance.retryOperation(async (supabase) => {
                         return await supabase
-                            .from('inventario_completo')
-                            .select('*')
-                            .eq('settore', settore)
-                            .eq('attivo', true)
+                            .from(`articoli_${settore.toLowerCase()}`)
+                            .select('cod, descrizione, categoria, quantita, ubicazione, attivo')
                             .order('categoria')
                             .order('descrizione');
                     }, `recupero articoli ${settore}`);
