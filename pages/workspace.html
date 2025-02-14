@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVENT TRACK WORKSPACE</title>
-    <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/workspace/style.css">
-    <link rel="stylesheet" href="../css/workspace/layout.css">
-    <link rel="stylesheet" href="../css/table.css">
-    <link rel="stylesheet" href="../css/sidebar.css">
 </head>
 <body>
     <header class="ws-header">
@@ -42,46 +38,5 @@
     <footer class="ws-footer">
         <p>&copy; 2025 Control Stage Event Track - Creato e Sviluppato da Massimiliano Cucaro - Tutti i diritti riservati</p>
     </footer>
-
-    <script type="module">
-        import { Sidebar } from '../js/components/Sidebar.js';
-
-        // Inizializza la sidebar
-        const sidebar = new Sidebar({
-            position: 'left',
-            theme: 'light',
-            width: '300px'
-        });
-
-        // Imposta il contenuto della sidebar
-        sidebar.setContent(`
-            <div class="sidebar-section">
-                <h3>Accesso Rapido</h3>
-                <ul class="sidebar-menu">
-                    <li><a href="workspace/schede/liste-aperte.html">Liste Aperte</a></li>
-                    <li><a href="workspace/schede/richiesta.html">Richieste Materiali</a></li>
-                    <li><a href="workspace/magazzino/preparazione.html">Preparazione</a></li>
-                </ul>
-            </div>
-            
-            <div class="sidebar-section">
-                <h3>Statistiche</h3>
-                <ul class="sidebar-menu">
-                    <li><a href="workspace/report/schede.html">Schede Attive</a></li>
-                    <li><a href="workspace/report/materiali.html">Materiali</a></li>
-                    <li><a href="workspace/report/movimenti.html">Movimenti</a></li>
-                </ul>
-            </div>
-
-            <div class="sidebar-section">
-                <h3>Utilità</h3>
-                <ul class="sidebar-menu">
-                    <li><a href="workspace/documenti/ddt.html">Genera DDT</a></li>
-                    <li><a href="workspace/documenti/report.html">Report Giornaliero</a></li>
-                    <li><a href="workspace/documenti/archivio.html">Archivio</a></li>
-                </ul>
-            </div>
-        `);
-    </script>
 </body>
 </html>
